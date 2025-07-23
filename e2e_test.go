@@ -538,8 +538,5 @@ func TestMain(m *testing.M) {
 	// Run tests
 	code := m.Run()
 
-	// Cleanup
-	os.Remove("markdown-reader-mcp")
-
 	os.Exit(code)
 }
