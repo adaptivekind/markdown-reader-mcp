@@ -27,17 +27,17 @@ Read the content of a specific markdown file by providing its file path.
 
 ## Usage
 
-Run the server with directories specified as a comma-separated list:
+Run the server with directories specified as arguments:
 
 ```bash
 # Scan current directory only (default)
 ./markdown-reader-mcp
 
 # Scan multiple directories
-./markdown-reader-mcp -dirs "/path/to/docs,/another/path,./local/docs"
+./markdown-reader-mcp /path/to/docs /another/path ./local/docs
 
 # Scan current directory and test_data
-./markdown-reader-mcp -dirs ".,./test_data"
+./markdown-reader-mcp . ./test_data
 ```
 
 The server communicates via stdio using the MCP protocol.
@@ -66,7 +66,7 @@ Create or update `CLAUDE.md` in your project root:
 ## Markdown Reader
 
 - **Command**: `./markdown-reader-mcp`
-- **Args**: `["-dirs", "docs,guides,README.md"]`
+- **Args**: `["docs", "guides", "."]`
 - **Description**: Reads and searches markdown files in specified directories
 ```
 
@@ -76,16 +76,13 @@ If you have the Claude Code CLI installed, you can add the server directly:
 
 ```bash
 # Add server for current project (creates/updates CLAUDE.md)
-claude-code mcp add markdown-reader \
-  --command "./markdown-reader-mcp" \
-  --args "-dirs" "docs,guides,./" \
-  --description "Reads and searches markdown files"
+claude mcp add markdown-reader \
+  -- ./markdown-reader-mcp docs guides .
 
 # Add server globally
-claude-code mcp add markdown-reader \
+claude mcp add markdown-reader \
   --global \
-  --command "/absolute/path/to/markdown-reader-mcp" \
-  --args "-dirs" "docs,guides,./"
+  -- /absolute/path/to/markdown-reader-mcp docs guides
 ```
 
 **Option C: Using Claude Code UI**
@@ -96,7 +93,7 @@ claude-code mcp add markdown-reader \
 4. Fill in:
    - **Name**: `markdown-reader`
    - **Command**: `/absolute/path/to/markdown-reader-mcp`
-   - **Arguments**: `["-dirs", "docs,guides,./"]`
+   - **Arguments**: `["docs", "guides", "."]`
    - **Working Directory**: Your project directory
 5. Save and restart Claude Code
 
@@ -109,7 +106,7 @@ Create or update your MCP configuration file (typically `~/.config/claude-code/m
   "mcpServers": {
     "markdown-reader": {
       "command": "/absolute/path/to/markdown-reader-mcp",
-      "args": ["-dirs", "docs,guides,./"],
+      "args": ["docs", "guides", "."],
       "env": {}
     }
   }
@@ -139,7 +136,7 @@ After configuring, restart Claude Code and verify the server is working:
 claude-code mcp list
 
 # Test the server directly (optional)
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | ./markdown-reader-mcp -dirs "docs,guides"
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | ./markdown-reader-mcp docs guides
 ```
 
 ### Step 4: Example Usage
@@ -155,9 +152,9 @@ After setup, you can ask Claude Code to:
 
 - **Choose the right method**: Use CLAUDE.md for project-specific setup, CLI/UI for convenience, or manual config for advanced control
 - **Path considerations**: Use relative paths (`./markdown-reader-mcp`) for project-specific setups, absolute paths for global installations
-- **Directory optimization**: Specify relevant directories with `-dirs` to limit scope and improve performance
+- **Directory optimization**: Specify relevant directories as arguments to limit scope and improve performance
 - **Common directories**: Include `docs/`, `guides/`, project root, or any directory containing markdown documentation
-- **Testing**: Use `./markdown-reader-mcp -dirs "your/dirs" -help` to test the configuration before adding to Claude Code
+- **Testing**: Use `./markdown-reader-mcp docs guides --help` to test the configuration before adding to Claude Code
 - **Recursive discovery**: The server automatically discovers `.md` files recursively in specified directories
 
 ### Troubleshooting
@@ -172,7 +169,7 @@ After setup, you can ask Claude Code to:
 
 - Verify directories exist: `ls -la your/directory/path`
 - Check directory permissions
-- Test manually: `./markdown-reader-mcp -dirs "your/dirs" -help`
+- Test manually: `./markdown-reader-mcp your/dirs --help`
 
 **Connection issues:**
 

@@ -23,15 +23,14 @@ var config Config
 
 func main() {
 	// Parse command line arguments
-	var directoriesFlag = flag.String("dirs", ".", "Comma-separated list of directories to scan for markdown files")
 	flag.Parse()
 
-	// Parse directories from command line argument
-	config.Directories = strings.Split(*directoriesFlag, ",")
-
-	// Trim whitespace from each directory
-	for i, dir := range config.Directories {
-		config.Directories[i] = strings.TrimSpace(dir)
+	// Get directories from positional arguments, default to current directory
+	args := flag.Args()
+	if len(args) == 0 {
+		config.Directories = []string{"."}
+	} else {
+		config.Directories = args
 	}
 
 	log.Printf("Scanning directories: %v", config.Directories)

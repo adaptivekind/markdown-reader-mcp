@@ -36,7 +36,7 @@ func NewMCPTestClient(t *testing.T) *MCPTestClient {
 	}
 
 	// Start the server with test directories
-	cmd := exec.Command("./markdown-reader-mcp", "-dirs", "./test_data,.")
+	cmd := exec.Command("./markdown-reader-mcp", "./test_data", ".")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
