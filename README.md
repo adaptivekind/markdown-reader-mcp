@@ -54,7 +54,7 @@ go build -o markdown-reader-mcp .
 
 ### Step 2: Configure Claude Code
 
-Add the server to your Claude Code MCP configuration. The configuration location depends on your setup:
+Add the server to your Claude Code MCP configuration using one of these methods:
 
 **Option A: Using CLAUDE.md (Recommended)**
 
@@ -70,9 +70,39 @@ Create or update `CLAUDE.md` in your project root:
 - **Description**: Reads and searches markdown files in specified directories
 ```
 
-**Option B: Using MCP Configuration File**
+**Option B: Using Claude Code CLI**
 
-Create or update your MCP configuration file (typically `~/.config/claude-code/mcp.json` or similar):
+If you have the Claude Code CLI installed, you can add the server directly:
+
+```bash
+# Add server for current project (creates/updates CLAUDE.md)
+claude-code mcp add markdown-reader \
+  --command "./markdown-reader-mcp" \
+  --args "-dirs" "docs,guides,./" \
+  --description "Reads and searches markdown files"
+
+# Add server globally
+claude-code mcp add markdown-reader \
+  --global \
+  --command "/absolute/path/to/markdown-reader-mcp" \
+  --args "-dirs" "docs,guides,./"
+```
+
+**Option C: Using Claude Code UI**
+
+1. Open Claude Code
+2. Go to Settings/Preferences → MCP Servers
+3. Click "Add Server"
+4. Fill in:
+   - **Name**: `markdown-reader`
+   - **Command**: `/absolute/path/to/markdown-reader-mcp`
+   - **Arguments**: `["-dirs", "docs,guides,./"]`
+   - **Working Directory**: Your project directory
+5. Save and restart Claude Code
+
+**Option D: Manual Configuration File**
+
+Create or update your MCP configuration file (typically `~/.config/claude-code/mcp.json`):
 
 ```json
 {
@@ -100,6 +130,18 @@ Once configured, Claude Code will have access to:
 - `search_markdown` - Search for text within markdown files
 - `list_directories` - List configured directories
 
+### Step 3: Verify Configuration
+
+After configuring, restart Claude Code and verify the server is working:
+
+```bash
+# Check if Claude Code can see your MCP server
+claude-code mcp list
+
+# Test the server directly (optional)
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | ./markdown-reader-mcp -dirs "docs,guides"
+```
+
 ### Step 4: Example Usage
 
 After setup, you can ask Claude Code to:
@@ -111,10 +153,12 @@ After setup, you can ask Claude Code to:
 
 ### Configuration Tips
 
-- Use absolute paths in MCP configuration for reliability
-- Specify relevant directories with `-dirs` to limit scope and improve performance
-- Include common documentation directories like `docs/`, `guides/`, or project root
-- The server automatically discovers `.md` files recursively in specified directories
+- **Choose the right method**: Use CLAUDE.md for project-specific setup, CLI/UI for convenience, or manual config for advanced control
+- **Path considerations**: Use relative paths (`./markdown-reader-mcp`) for project-specific setups, absolute paths for global installations
+- **Directory optimization**: Specify relevant directories with `-dirs` to limit scope and improve performance
+- **Common directories**: Include `docs/`, `guides/`, project root, or any directory containing markdown documentation
+- **Testing**: Use `./markdown-reader-mcp -dirs "your/dirs" -help` to test the configuration before adding to Claude Code
+- **Recursive discovery**: The server automatically discovers `.md` files recursively in specified directories
 
 ### Troubleshooting
 
