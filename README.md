@@ -23,7 +23,11 @@ including file metadata.
 
 ### `read_markdown_file`
 
-Read the content of a specific markdown file by providing its file path.
+Read the content of a specific markdown file by providing either:
+- Full or relative file path (e.g., `docs/api.md`, `./guides/setup.md`)
+- Just the filename (e.g., `README.md`, `api`, `setup`) - the server will search all configured directories
+
+If multiple files with the same name exist, the first match found will be returned.
 
 ## Usage
 
@@ -80,6 +84,8 @@ After setup, you can ask Claude Code to:
 
 - "Show me all markdown files in the project"
 - "Read the content of docs/api.md"
+- "Read the content of README.md" (searches all directories)
+- "Show me the api.md file" (finds api.md anywhere in configured directories)
 
 ## Development Setup
 

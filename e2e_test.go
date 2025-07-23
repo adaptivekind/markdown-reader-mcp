@@ -383,6 +383,69 @@ func TestMarkdownFileRead(t *testing.T) {
 	}
 }
 
+func TestMarkdownFileReadByName(t *testing.T) {
+	client := NewMCPTestClient(t)
+	defer client.Close()
+
+	// Initialize
+	_, err := client.SendRequest(createInitializeRequest(1))
+	if err != nil {
+		t.Fatalf("Failed to initialize: %v", err)
+	}
+
+	// Test reading a file by just its name (should find api.md in test_data/docs/)
+	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]interface{}{
+		"file_path": "api.md",
+	}))
+	if err != nil {
+		t.Fatalf("Failed to read markdown file by name: %v", err)
+	}
+
+	result, ok := response["result"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Expected result object")
+	}
+
+	content, ok := result["content"].([]interface{})
+	if !ok || len(content) == 0 {
+		t.Fatalf("Expected content array")
+	}
+
+	textContent := content[0].(map[string]interface{})
+	text := textContent["text"].(string)
+
+	// Verify content contains expected text
+	if !strings.Contains(text, "# API Documentation") {
+		t.Error("Expected file content to contain API Documentation header")
+	}
+
+	// Test reading a file by name without extension
+	response, err = client.SendRequest(createToolCallRequest(3, "read_markdown_file", map[string]interface{}{
+		"file_path": "README",
+	}))
+	if err != nil {
+		t.Fatalf("Failed to read README by name: %v", err)
+	}
+
+	result, ok = response["result"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Expected result object")
+	}
+
+	content, ok = result["content"].([]interface{})
+	if !ok || len(content) == 0 {
+		t.Fatalf("Expected content array")
+	}
+
+	textContent = content[0].(map[string]interface{})
+	text = textContent["text"].(string)
+
+	// Verify content contains expected text from test_data/README.md
+	if !strings.Contains(text, "# Test Data") {
+		t.Error("Expected file content to contain Test Data header")
+	}
+}
+
 func TestToolsList(t *testing.T) {
 	client := NewMCPTestClient(t)
 	defer client.Close()
@@ -462,8 +525,8 @@ func TestErrorHandling(t *testing.T) {
 	text := textContent["text"].(string)
 
 	// Should contain error message about file not found
-	if !strings.Contains(strings.ToLower(text), "failed to read file") {
-		t.Errorf("Expected error message about failed to read file, got: %s", text)
+	if !strings.Contains(strings.ToLower(text), "file not found") && !strings.Contains(strings.ToLower(text), "failed to read file") {
+		t.Errorf("Expected error message about file not found or failed to read file, got: %s", text)
 	}
 }
 
