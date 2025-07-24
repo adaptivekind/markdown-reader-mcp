@@ -17,35 +17,67 @@ func TestFindMarkdownFiles(t *testing.T) {
 	tests := []struct {
 		name      string
 		dirs      []string
+		query     string
+		pageSize  int
 		wantCount int
 		wantFiles []string
 	}{
 		{
 			name:      "find all markdown files",
 			dirs:      []string{markdownDir},
+			query:     "",
+			pageSize:  0,
 			wantCount: 4,
 			wantFiles: []string{"README.md", "foo.md", "bar.md", "baz.md"},
 		},
 		{
 			name:      "find files in non-existent directory",
 			dirs:      []string{filepath.Join(markdownDir, "nonexistent")},
+			query:     "",
+			pageSize:  0,
 			wantCount: 0,
 			wantFiles: []string{},
 		},
 		{
 			name:      "find files in multiple directories",
 			dirs:      []string{markdownDir, "test/dir2"},
+			query:     "",
+			pageSize:  0,
 			wantCount: 5,
 			wantFiles: []string{"README.md", "foo.md", "bar.md", "baz.md", "cat.md"},
+		},
+		{
+			name:      "find files with query filter",
+			dirs:      []string{markdownDir},
+			query:     "foo",
+			pageSize:  0,
+			wantCount: 1,
+			wantFiles: []string{"foo.md"},
+		},
+		{
+			name:      "find files with pagination",
+			dirs:      []string{markdownDir},
+			query:     "",
+			pageSize:  2,
+			wantCount: 2,
+			wantFiles: []string{"README.md", "foo.md", "bar.md", "baz.md"}, // Any 2 from these files
+		},
+		{
+			name:      "find files with query and pagination",
+			dirs:      []string{markdownDir, "test/dir2"},
+			query:     "a",
+			pageSize:  1,
+			wantCount: 1,
+			wantFiles: []string{"README.md", "bar.md", "baz.md", "cat.md"}, // Any 1 file containing 'a'
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config = Config{Directories: tt.dirs}
+			config = Config{Directories: tt.dirs, MaxPageSize: 500}
 			defer func() { config = oldConfig }()
 
-			files, err := findAllMarkdownFiles()
+			files, err := findMarkdownFiles(tt.query, tt.pageSize)
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
@@ -55,16 +87,34 @@ func TestFindMarkdownFiles(t *testing.T) {
 				t.Errorf("Expected %d files, got %d", tt.wantCount, len(files))
 			}
 
-			// Check that all expected files are found
+			// Check that expected files are found (allowing for different order or pagination)
 			foundFiles := make(map[string]bool)
 			for _, file := range files {
 				basename := filepath.Base(file)
 				foundFiles[basename] = true
 			}
 
-			for _, wantFile := range tt.wantFiles {
-				if !foundFiles[wantFile] {
-					t.Errorf("Expected to find file %s", wantFile)
+			// For pagination tests, just check that we have the expected count
+			if tt.pageSize > 0 {
+				// For pagination, we just verify the count and that all found files are valid
+				for foundFile := range foundFiles {
+					isValidFile := false
+					for _, wantFile := range tt.wantFiles {
+						if foundFile == wantFile {
+							isValidFile = true
+							break
+						}
+					}
+					if !isValidFile {
+						t.Errorf("Found unexpected file %s", foundFile)
+					}
+				}
+			} else {
+				// For non-pagination tests, check exact matches
+				for _, wantFile := range tt.wantFiles {
+					if !foundFiles[wantFile] {
+						t.Errorf("Expected to find file %s", wantFile)
+					}
 				}
 			}
 		})
@@ -77,32 +127,61 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 	testDir := "test/dir1"
 
 	// Set config to test directory
-	config = Config{Directories: []string{testDir}}
+	config = Config{Directories: []string{testDir}, MaxPageSize: 500}
 	defer func() { config = oldConfig }()
 
 	tests := []struct {
 		name      string
-		req       mcp.ReadResourceRequest
+		req       mcp.CallToolRequest
 		wantError bool
 		wantFiles int
 		wantDirs  []string
 	}{
 		{
 			name: "successful list",
-			req: mcp.ReadResourceRequest{
-				Params: mcp.ReadResourceParams{
-					URI: "markdown://find_all_files",
+			req: mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Name:      "find_markdown_files",
+					Arguments: map[string]any{},
 				},
 			},
 			wantError: false,
 			wantFiles: 4,
 			wantDirs:  []string{testDir},
 		},
+		{
+			name: "list with query",
+			req: mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Name: "find_markdown_files",
+					Arguments: map[string]any{
+						"query": "foo",
+					},
+				},
+			},
+			wantError: false,
+			wantFiles: 1,
+			wantDirs:  []string{testDir},
+		},
+		{
+			name: "list with page size",
+			req: mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Name: "find_markdown_files",
+					Arguments: map[string]any{
+						"page_size": "2",
+					},
+				},
+			},
+			wantError: false,
+			wantFiles: 2,
+			wantDirs:  []string{testDir},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := handleFindAllMarkdownFiles(context.Background(), tt.req)
+			result, err := handleFindMarkdownFiles(context.Background(), tt.req)
 
 			if tt.wantError && err == nil {
 				t.Error("Expected error but got none")
@@ -116,20 +195,32 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 				return
 			}
 
-			if len(result) != 1 {
-				t.Errorf("Expected 1 resource content, got %d", len(result))
+			if result == nil {
+				t.Error("Expected tool result, got nil")
 				return
 			}
 
-			textContent, ok := result[0].(mcp.TextResourceContents)
-			if !ok {
-				t.Errorf("Expected TextResourceContents, got %T", result[0])
+			if result.IsError {
+				t.Errorf("Tool returned error: %v", result.Content)
 				return
 			}
+
+			if len(result.Content) == 0 {
+				t.Error("Expected content in tool result")
+				return
+			}
+
+			textContent, ok := result.Content[0].(mcp.TextContent)
+			if !ok {
+				t.Errorf("Expected TextContent, got %T", result.Content[0])
+				return
+			}
+
+			text := textContent.Text
 
 			// Parse JSON response
 			var listData map[string]any
-			if err := json.Unmarshal([]byte(textContent.Text), &listData); err != nil {
+			if err := json.Unmarshal([]byte(text), &listData); err != nil {
 				t.Fatalf("Failed to parse JSON response: %v", err)
 			}
 

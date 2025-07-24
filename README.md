@@ -4,14 +4,19 @@ A Model Context Protocol (MCP) server built in Go with **read-only** access to
 markdown documents from configured local directories. The scope of this MCP
 server is explicitly constrained to read-only to minimise security concerns.
 
-## Resources
-
-### `markdown://find_all_files`
-
-Returns a JSON list of all markdown files found in configured directories,
-including file metadata (path, name, relativePath) along with directory list and file count.
+The server includes debug logging that tracks each tool call with input parameters, execution time, and results.
 
 ## Tools
+
+### `find_markdown_files`
+
+Find markdown files in configured directories with optional filtering and pagination.
+
+**Parameters:**
+- `query` (optional): Filter files by name containing this string. If not provided, matches all files.
+- `page_size` (optional): Limit number of results returned. Default is 50, configurable maximum in config file (default max: 500).
+
+Returns a JSON list of matching markdown files with metadata (path, name, relativePath) along with directory list and file count.
 
 ### `read_markdown_file`
 
@@ -45,7 +50,9 @@ Create a configuration file at `~/.config/markdown-reader-mcp/markdown-reader-mc
 
 ```json
 {
-  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"]
+  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"],
+  "max_page_size": 100,
+  "debug_logging": true
 }
 ```
 
@@ -54,6 +61,11 @@ Then run without arguments:
 ```sh
 ./markdown-reader-mcp
 ```
+
+**Configuration Options:**
+- `directories`: Array of directory paths to scan for markdown files
+- `max_page_size` (optional): Maximum number of results that can be returned in a single page. Defaults to 500 if not specified.
+- `debug_logging` (optional): Enable detailed debug logging for each tool call. Defaults to false if not specified.
 
 **Note:**
 - Command-line arguments take precedence over the configuration file. If both are provided, the command-line arguments will be used.
@@ -117,12 +129,9 @@ claude mcp remove markdown-reader
 
 Once configured, Claude Code will have access to:
 
-**Resources:**
-
-- `markdown://find_all_files` - Get a JSON list of all markdown files
-
 **Tools:**
 
+- `find_markdown_files` - Find markdown files with optional query filtering and pagination
 - `read_markdown_file` - Read content of specific markdown files
 
 ### Verify Configuration
@@ -133,10 +142,23 @@ In Claude code type `/mcp` to verify that the MCP server is registered and to vi
 
 After setup, you can ask Claude Code to:
 
-- "Show me all markdown files in the project" (uses the `markdown://find_all_files` resource)
+- "Show me all markdown files in the project" (uses the `find_markdown_files` tool)
+- "Find files containing 'api' in the name" (uses the `find_markdown_files` tool with query parameter)
+- "Show me the first 10 markdown files" (uses the `find_markdown_files` tool with page_size parameter)
 - "Read the content of README" (uses `read_markdown_file` tool with filename)
 - "Read the content of README.md" (uses `read_markdown_file` tool with filename)
 - "Show me the api file" (uses `read_markdown_file` tool, searches for `api.md`)
+
+## Debug Logging
+
+When enabled via the `debug_logging` configuration option, the server logs detailed debug information for each tool call, including:
+
+- Input parameters (query, page_size, filename)
+- Execution time for each operation
+- Number of results found or bytes read
+- Error conditions and security blocks
+
+Debug logs are prefixed with `[DEBUG]` and include timing information to help with performance monitoring. Debug logging is **disabled by default** for performance and to reduce log noise.
 
 ## Development Setup
 

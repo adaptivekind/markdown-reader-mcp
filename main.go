@@ -13,7 +13,9 @@ import (
 )
 
 type Config struct {
-	Directories []string `json:"directories"`
+	Directories  []string `json:"directories"`
+	MaxPageSize  int      `json:"max_page_size,omitempty"`
+	DebugLogging bool     `json:"debug_logging,omitempty"`
 }
 
 var config Config
@@ -66,6 +68,11 @@ func loadConfigFromFile() (*Config, error) {
 		cfg.Directories[i] = expandedDir
 	}
 
+	// Set default max page size if not configured
+	if cfg.MaxPageSize == 0 {
+		cfg.MaxPageSize = 500
+	}
+
 	return &cfg, nil
 }
 
@@ -83,9 +90,17 @@ func main() {
 		config = *cfg
 	} else {
 		config.Directories = args
+		// Set default max page size for command-line usage
+		config.MaxPageSize = 500
+		// Debug logging is disabled by default for command-line usage
+		config.DebugLogging = false
 	}
 
 	log.Printf("Scanning directories: %v", config.Directories)
+
+	if config.DebugLogging {
+		log.Printf("[CONFIG] Debug logging is enabled")
+	}
 
 	// Create MCP server
 	s := server.NewMCPServer(
@@ -95,15 +110,18 @@ func main() {
 		server.WithToolCapabilities(true),
 	)
 
-	// Add resource for listing markdown files
-	s.AddResource(
-		mcp.NewResource(
-			"markdown://find_all_files",
-			"Find all Markdown Files",
-			mcp.WithResourceDescription("Find all known markdown files"),
-			mcp.WithMIMEType("application/json"),
+	// Add tool for finding markdown files
+	s.AddTool(
+		mcp.NewTool("find_markdown_files",
+			mcp.WithDescription("Find all markdown files in configured directories"),
+			mcp.WithString("query",
+				mcp.Description("Query to find matching files. If not set, then it matches all files. If a string is sent then files containing that text is returned."),
+			),
+			mcp.WithString("page_size",
+				mcp.Description("Number of results in a page"),
+			),
 		),
-		handleFindAllMarkdownFiles,
+		handleFindMarkdownFiles,
 	)
 
 	// Add tool for reading individual markdown files

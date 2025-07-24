@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **read-only** Model Context Protocol (MCP) server built in Go that enables LLMs to discover, read, and search markdown files in specified directories. The server is explicitly constrained to read-only operations for security.
 
+The server includes optional debug logging (disabled by default) that can be enabled via configuration to track each tool call with input parameters, execution timing, and results for performance monitoring and troubleshooting.
+
 ## Build and Development Commands
 
 ```bash
@@ -55,13 +57,9 @@ go test -v -run TestServerInitialization
 
 ### MCP Interface
 
-**Resource:** `markdown://find_all_files`
-
-- Returns JSON array of discovered markdown files with metadata (path, name, relativePath)
-- Includes directory list and file count
-
 **Tools:**
 
+- `find_markdown_files`: Find markdown files with optional query filtering and pagination. Parameters: `query` (optional string to filter by filename), `page_size` (optional number, default 50, max configurable). Returns JSON array of discovered markdown files with metadata (path, name, relativePath) and includes directory list and file count.
 - `read_markdown_file`: Read content of specific file by filename only (e.g., 'README' or 'README.md')
 
 ### Testing Architecture
@@ -100,7 +98,9 @@ The server can be configured in two ways:
 Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
 ```json
 {
-  "directories": ["~/Documents/notes", "~/projects/docs", "."]
+  "directories": ["~/Documents/notes", "~/projects/docs", "."],
+  "max_page_size": 100,
+  "debug_logging": true
 }
 ```
 
