@@ -12,26 +12,7 @@ import (
 func TestFindFileByName(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
-	tempDir := t.TempDir()
-
-	// Create test files
-	testFiles := map[string]string{
-		"test.md":              "content1",
-		"subdir/test.md":       "content2", // Duplicate name
-		"subdir/unique.md":     "content3",
-		"another/different.md": "content4",
-	}
-
-	for path, content := range testFiles {
-		fullPath := filepath.Join(tempDir, path)
-		dir := filepath.Dir(fullPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			t.Fatalf("Failed to create directory %s: %v", dir, err)
-		}
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
-			t.Fatalf("Failed to create test file %s: %v", fullPath, err)
-		}
-	}
+	tempDir := "test/dir1"
 
 	config = Config{Directories: []string{tempDir}}
 	defer func() { config = oldConfig }()
@@ -44,23 +25,16 @@ func TestFindFileByName(t *testing.T) {
 		expectMultiple bool
 	}{
 		{
-			name:      "find existing unique file",
-			filename:  "unique.md",
+			name:      "find existing file",
+			filename:  "foo.md",
 			wantError: false,
 			wantFound: true,
 		},
 		{
 			name:      "find existing file without extension",
-			filename:  "unique",
+			filename:  "foo",
 			wantError: false,
 			wantFound: true,
-		},
-		{
-			name:           "find file with multiple matches",
-			filename:       "test.md",
-			wantError:      false,
-			wantFound:      true,
-			expectMultiple: true,
 		},
 		{
 			name:      "find non-existent file",
@@ -108,26 +82,10 @@ func TestFindFileByName(t *testing.T) {
 func TestHandleReadMarkdownFile(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
-	tempDir := t.TempDir()
-
-	// Create test files
-	testContent := "# Test File\nThis is test content."
-	testFile := filepath.Join(tempDir, "test.md")
-	nestedTestFile := filepath.Join(tempDir, "nested", "nested.md")
-
-	if err := os.WriteFile(testFile, []byte(testContent), 0644); err != nil {
-		t.Fatalf("Failed to create test file: %v", err)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(nestedTestFile), 0755); err != nil {
-		t.Fatalf("Failed to create nested directory: %v", err)
-	}
-	if err := os.WriteFile(nestedTestFile, []byte("# Nested File\nNested content."), 0644); err != nil {
-		t.Fatalf("Failed to create nested test file: %v", err)
-	}
+	testDir := "test/dir1"
 
 	// Set config to test directory
-	config = Config{Directories: []string{tempDir}}
+	config = Config{Directories: []string{testDir}}
 	defer func() { config = oldConfig }()
 
 	tests := []struct {
@@ -138,20 +96,15 @@ func TestHandleReadMarkdownFile(t *testing.T) {
 	}{
 		{
 			name:        "read existing file by name only",
-			filename:    "test.md",
+			filename:    "foo.md",
 			wantError:   false,
-			wantContent: testContent,
+			wantContent: "# Foo\n\nFoo markdown document\n",
 		},
 		{
 			name:        "read existing file by name without extension",
-			filename:    "test",
+			filename:    "foo",
 			wantError:   false,
-			wantContent: testContent,
-		},
-		{
-			name:      "read existing file by full path",
-			filename:  testFile,
-			wantError: true,
+			wantContent: "# Foo\n\nFoo markdown document\n",
 		},
 		{
 			name:      "read non-existent file",

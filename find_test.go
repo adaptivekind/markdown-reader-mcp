@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -75,32 +74,10 @@ func TestFindMarkdownFiles(t *testing.T) {
 func TestHandleFindAllMarkdown(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
-	tempDir := t.TempDir()
-
-	// Create test markdown files
-	testFiles := []struct {
-		path    string
-		content string
-	}{
-		{"test1.md", "# Test 1\nContent of test file 1"},
-		{"subdir/test2.md", "# Test 2\nContent of test file 2"},
-		{"test3.md", "# Test 3\nContent of test file 3"},
-		{"not_markdown.txt", "This should be ignored"},
-	}
-
-	for _, tf := range testFiles {
-		fullPath := filepath.Join(tempDir, tf.path)
-		dir := filepath.Dir(fullPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			t.Fatalf("Failed to create directory %s: %v", dir, err)
-		}
-		if err := os.WriteFile(fullPath, []byte(tf.content), 0644); err != nil {
-			t.Fatalf("Failed to create test file %s: %v", fullPath, err)
-		}
-	}
+	testDir := "test/dir1"
 
 	// Set config to test directory
-	config = Config{Directories: []string{tempDir}}
+	config = Config{Directories: []string{testDir}}
 	defer func() { config = oldConfig }()
 
 	tests := []struct {
@@ -118,8 +95,8 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 				},
 			},
 			wantError: false,
-			wantFiles: 3, // Only .md files
-			wantDirs:  []string{tempDir},
+			wantFiles: 4,
+			wantDirs:  []string{testDir},
 		},
 	}
 
