@@ -13,10 +13,10 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-func handleFindAllMarkdownFiles(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func handleFindAllMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	files, err := findAllMarkdownFiles()
 	if err != nil {
-		return nil, fmt.Errorf("failed to find markdown files: %w", err)
+		return mcp.NewToolResultError(fmt.Sprintf("failed to find markdown files: %v", err)), nil
 	}
 
 	// Create file info objects
@@ -37,16 +37,10 @@ func handleFindAllMarkdownFiles(ctx context.Context, req mcp.ReadResourceRequest
 
 	jsonData, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal file list: %w", err)
+		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal file list: %v", err)), nil
 	}
 
-	return []mcp.ResourceContents{
-		mcp.TextResourceContents{
-			URI:      req.Params.URI,
-			MIMEType: "application/json",
-			Text:     string(jsonData),
-		},
-	}, nil
+	return mcp.NewToolResultText(string(jsonData)), nil
 }
 
 func findAllMarkdownFiles() ([]string, error) {

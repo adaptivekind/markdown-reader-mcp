@@ -82,16 +82,17 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		req       mcp.ReadResourceRequest
+		req       mcp.CallToolRequest
 		wantError bool
 		wantFiles int
 		wantDirs  []string
 	}{
 		{
 			name: "successful list",
-			req: mcp.ReadResourceRequest{
-				Params: mcp.ReadResourceParams{
-					URI: "markdown://find_all_files",
+			req: mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Name:      "find_markdown_files",
+					Arguments: map[string]any{},
 				},
 			},
 			wantError: false,
@@ -116,20 +117,32 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 				return
 			}
 
-			if len(result) != 1 {
-				t.Errorf("Expected 1 resource content, got %d", len(result))
+			if result == nil {
+				t.Error("Expected tool result, got nil")
 				return
 			}
 
-			textContent, ok := result[0].(mcp.TextResourceContents)
-			if !ok {
-				t.Errorf("Expected TextResourceContents, got %T", result[0])
+			if result.IsError {
+				t.Errorf("Tool returned error: %v", result.Content)
 				return
 			}
+
+			if len(result.Content) == 0 {
+				t.Error("Expected content in tool result")
+				return
+			}
+
+			textContent, ok := result.Content[0].(mcp.TextContent)
+			if !ok {
+				t.Errorf("Expected TextContent, got %T", result.Content[0])
+				return
+			}
+
+			text := textContent.Text
 
 			// Parse JSON response
 			var listData map[string]any
-			if err := json.Unmarshal([]byte(textContent.Text), &listData); err != nil {
+			if err := json.Unmarshal([]byte(text), &listData); err != nil {
 				t.Fatalf("Failed to parse JSON response: %v", err)
 			}
 

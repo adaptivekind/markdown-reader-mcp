@@ -95,13 +95,10 @@ func main() {
 		server.WithToolCapabilities(true),
 	)
 
-	// Add resource for listing markdown files
-	s.AddResource(
-		mcp.NewResource(
-			"markdown://find_all_files",
-			"Find all Markdown Files",
-			mcp.WithResourceDescription("Find all known markdown files"),
-			mcp.WithMIMEType("application/json"),
+	// Add tool for finding markdown files
+	s.AddTool(
+		mcp.NewTool("find_markdown_files",
+			mcp.WithDescription("Find all markdown files in configured directories"),
 		),
 		handleFindAllMarkdownFiles,
 	)

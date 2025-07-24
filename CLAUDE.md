@@ -55,13 +55,9 @@ go test -v -run TestServerInitialization
 
 ### MCP Interface
 
-**Resource:** `markdown://find_all_files`
-
-- Returns JSON array of discovered markdown files with metadata (path, name, relativePath)
-- Includes directory list and file count
-
 **Tools:**
 
+- `find_markdown_files`: Find all markdown files in configured directories - returns JSON array of discovered markdown files with metadata (path, name, relativePath) and includes directory list and file count
 - `read_markdown_file`: Read content of specific file by filename only (e.g., 'README' or 'README.md')
 
 ### Testing Architecture

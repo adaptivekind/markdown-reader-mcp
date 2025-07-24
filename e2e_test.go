@@ -263,10 +263,8 @@ func TestResourcesList(t *testing.T) {
 		t.Fatalf("Expected resources array")
 	}
 
-	// Verify we have the expected resources
-	expectedResources := map[string]bool{
-		"markdown://find_all_files": false,
-	}
+	// Verify we have the expected resources (should be empty now)
+	expectedResources := map[string]bool{}
 
 	for _, resource := range resources {
 		res := resource.(map[string]any)
@@ -293,10 +291,10 @@ func TestMarkdownFilesList(t *testing.T) {
 		t.Fatalf("Failed to initialize: %v", err)
 	}
 
-	// Read markdown list resource
-	response, err := client.SendRequest(createResourceReadRequest(2, "markdown://find_all_files"))
+	// Call find_markdown_files tool
+	response, err := client.SendRequest(createToolCallRequest(2, "find_markdown_files", map[string]any{}))
 	if err != nil {
-		t.Fatalf("Failed to read markdown list: %v", err)
+		t.Fatalf("Failed to call find_markdown_files tool: %v", err)
 	}
 
 	result, ok := response["result"].(map[string]any)
@@ -304,13 +302,13 @@ func TestMarkdownFilesList(t *testing.T) {
 		t.Fatalf("Expected result object")
 	}
 
-	contents, ok := result["contents"].([]any)
-	if !ok || len(contents) == 0 {
-		t.Fatalf("Expected contents array")
+	content, ok := result["content"].([]any)
+	if !ok || len(content) == 0 {
+		t.Fatalf("Expected content array")
 	}
 
-	content := contents[0].(map[string]any)
-	text := content["text"].(string)
+	textContent := content[0].(map[string]any)
+	text := textContent["text"].(string)
 
 	// Parse the JSON response
 	var listData map[string]any
@@ -471,7 +469,8 @@ func TestToolsList(t *testing.T) {
 
 	// Verify expected tools
 	expectedTools := map[string]bool{
-		"read_markdown_file": false,
+		"find_markdown_files": false,
+		"read_markdown_file":  false,
 	}
 
 	for _, tool := range tools {

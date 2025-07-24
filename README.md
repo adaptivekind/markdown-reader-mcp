@@ -4,14 +4,12 @@ A Model Context Protocol (MCP) server built in Go with **read-only** access to
 markdown documents from configured local directories. The scope of this MCP
 server is explicitly constrained to read-only to minimise security concerns.
 
-## Resources
-
-### `markdown://find_all_files`
-
-Returns a JSON list of all markdown files found in configured directories,
-including file metadata (path, name, relativePath) along with directory list and file count.
-
 ## Tools
+
+### `find_markdown_files`
+
+Find all markdown files in configured directories. Returns a JSON list of all markdown files found,
+including file metadata (path, name, relativePath) along with directory list and file count.
 
 ### `read_markdown_file`
 
@@ -117,12 +115,9 @@ claude mcp remove markdown-reader
 
 Once configured, Claude Code will have access to:
 
-**Resources:**
-
-- `markdown://find_all_files` - Get a JSON list of all markdown files
-
 **Tools:**
 
+- `find_markdown_files` - Get a JSON list of all markdown files in configured directories
 - `read_markdown_file` - Read content of specific markdown files
 
 ### Verify Configuration
@@ -133,7 +128,7 @@ In Claude code type `/mcp` to verify that the MCP server is registered and to vi
 
 After setup, you can ask Claude Code to:
 
-- "Show me all markdown files in the project" (uses the `markdown://find_all_files` resource)
+- "Show me all markdown files in the project" (uses the `find_markdown_files` tool)
 - "Read the content of README" (uses `read_markdown_file` tool with filename)
 - "Read the content of README.md" (uses `read_markdown_file` tool with filename)
 - "Show me the api file" (uses `read_markdown_file` tool, searches for `api.md`)
