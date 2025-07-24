@@ -38,12 +38,12 @@ func main() {
 	// Add resource for listing markdown files
 	s.AddResource(
 		mcp.NewResource(
-			"markdown://find_all",
+			"markdown://find_all_files",
 			"Find all Markdown Files",
 			mcp.WithResourceDescription("Find all known markdown files"),
 			mcp.WithMIMEType("application/json"),
 		),
-		handleFindMarkdown,
+		handleFindAllMarkdownFiles,
 	)
 
 	// Add tool for reading individual markdown files

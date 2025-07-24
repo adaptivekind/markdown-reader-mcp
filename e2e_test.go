@@ -265,7 +265,7 @@ func TestResourcesList(t *testing.T) {
 
 	// Verify we have the expected resources
 	expectedResources := map[string]bool{
-		"markdown://find_all": false,
+		"markdown://find_all_files": false,
 	}
 
 	for _, resource := range resources {
@@ -294,7 +294,7 @@ func TestMarkdownFilesList(t *testing.T) {
 	}
 
 	// Read markdown list resource
-	response, err := client.SendRequest(createResourceReadRequest(2, "markdown://find_all"))
+	response, err := client.SendRequest(createResourceReadRequest(2, "markdown://find_all_files"))
 	if err != nil {
 		t.Fatalf("Failed to read markdown list: %v", err)
 	}
