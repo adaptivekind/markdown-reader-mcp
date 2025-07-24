@@ -25,7 +25,11 @@ Path traversal (e.g., `../`, `docs/api.md`) is not supported for security reason
 
 ## Usage
 
-Run the server with directories specified as arguments (at least one directory is required):
+The server can be configured in two ways:
+
+### Command-line Arguments
+
+Run the server with directories specified as arguments:
 
 ```sh
 # Scan single directory
@@ -34,6 +38,26 @@ Run the server with directories specified as arguments (at least one directory i
 # Scan multiple directories
 ./markdown-reader-mcp /path/to/docs /another/path ./local/docs
 ```
+
+### Configuration File
+
+Create a configuration file at `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
+
+```json
+{
+  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"]
+}
+```
+
+Then run without arguments:
+
+```sh
+./markdown-reader-mcp
+```
+
+**Note:**
+- Command-line arguments take precedence over the configuration file. If both are provided, the command-line arguments will be used.
+- Tilde (`~`) in directory paths will be automatically expanded to your home directory.
 
 ## Build the server
 
@@ -59,10 +83,22 @@ Add the server to your Claude Code MCP configuration using one of these methods:
 claude mcp add markdown-reader -- markdown-reader-mcp ~/my-markdown-directory
 ```
 
+Or, if using the configuration file approach:
+
+```sh
+claude mcp add markdown-reader -- markdown-reader-mcp
+```
+
 Add server for all your projects on this machine
 
 ```sh
 claude mcp add markdown-reader -s user -- markdown-reader-mcp ~/my-markdown-directory
+```
+
+Or with configuration file:
+
+```sh
+claude mcp add markdown-reader -s user -- markdown-reader-mcp
 ```
 
 List MCP servers installed
