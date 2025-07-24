@@ -36,7 +36,7 @@ func NewMCPTestClient(t *testing.T) *MCPTestClient {
 	}
 
 	// Start the server with test directories
-	cmd := exec.Command("./markdown-reader-mcp", "./test_data", ".")
+	cmd := exec.Command("./markdown-reader-mcp", "./test/dir1", ".")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -329,19 +329,18 @@ func TestMarkdownFilesList(t *testing.T) {
 		t.Errorf("Expected at least 5 markdown files, got %d", len(files))
 	}
 
-	// Check that we have files from test_data
 	foundTestFile := false
 	for _, file := range files {
 		fileData := file.(map[string]any)
 		path := fileData["path"].(string)
-		if strings.Contains(path, "test_data") {
+		if strings.Contains(path, "test/dir1") {
 			foundTestFile = true
 			break
 		}
 	}
 
 	if !foundTestFile {
-		t.Error("Expected to find files from test_data directory")
+		t.Error("Expected to find files from test directory")
 	}
 }
 
@@ -393,7 +392,6 @@ func TestMarkdownFileReadByName(t *testing.T) {
 		t.Fatalf("Failed to initialize: %v", err)
 	}
 
-	// Test reading a file by just its name (should find api.md in test_data/docs/)
 	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
 		"filename": "bar.md",
 	}))
@@ -440,7 +438,6 @@ func TestMarkdownFileReadByName(t *testing.T) {
 	textContent = content[0].(map[string]any)
 	text = textContent["text"].(string)
 
-	// Verify content contains expected text from test_data/README.md
 	if !strings.Contains(text, "# Foo") {
 		t.Error("Expected file content to contain Foo header")
 	}

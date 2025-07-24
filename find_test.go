@@ -13,30 +13,7 @@ import (
 func TestFindMarkdownFiles(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
-	tempDir := t.TempDir()
-
-	// Create test structure
-	testFiles := []struct {
-		path    string
-		content string
-	}{
-		{"file1.md", "content1"},
-		{"subdir/file2.md", "content2"},
-		{"subdir/nested/file3.md", "content3"},
-		{"file.txt", "not markdown"},
-		{"FILE4.MD", "uppercase extension"},
-	}
-
-	for _, tf := range testFiles {
-		fullPath := filepath.Join(tempDir, tf.path)
-		dir := filepath.Dir(fullPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			t.Fatalf("Failed to create directory %s: %v", dir, err)
-		}
-		if err := os.WriteFile(fullPath, []byte(tf.content), 0644); err != nil {
-			t.Fatalf("Failed to create test file %s: %v", fullPath, err)
-		}
-	}
+	markdownDir := "test/dir1"
 
 	tests := []struct {
 		name      string
@@ -46,21 +23,21 @@ func TestFindMarkdownFiles(t *testing.T) {
 	}{
 		{
 			name:      "find all markdown files",
-			dirs:      []string{tempDir},
-			wantCount: 4, // file1.md, file2.md, file3.md, FILE4.MD
-			wantFiles: []string{"file1.md", "file2.md", "file3.md", "FILE4.MD"},
+			dirs:      []string{markdownDir},
+			wantCount: 4,
+			wantFiles: []string{"README.md", "foo.md", "bar.md", "baz.md"},
 		},
 		{
 			name:      "find files in non-existent directory",
-			dirs:      []string{filepath.Join(tempDir, "nonexistent")},
+			dirs:      []string{filepath.Join(markdownDir, "nonexistent")},
 			wantCount: 0,
 			wantFiles: []string{},
 		},
 		{
 			name:      "find files in multiple directories",
-			dirs:      []string{tempDir, filepath.Join(tempDir, "subdir")},
-			wantCount: 6, // Will have duplicates since subdir is scanned twice
-			wantFiles: []string{"file1.md", "file2.md", "file3.md", "FILE4.MD"},
+			dirs:      []string{markdownDir, "test/dir2"},
+			wantCount: 5,
+			wantFiles: []string{"README.md", "foo.md", "bar.md", "baz.md", "cat.md"},
 		},
 	}
 
