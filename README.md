@@ -1,16 +1,8 @@
 # Markdown Reader MCP Server
 
-A Model Context Protocol (MCP) server built in Go that **reads** markdown
-documents from configured local directories. The scope of this MCP server is
-explicitly constrained to read-only to minimise security concerns.
-
-## Features
-
-- **Resource Access**: Access markdown files as MCP resources
-- **Directory Scanning**: Automatically discovers markdown files in specified directories
-- **Search Functionality**: Search for text within markdown files
-- **Command Line Configuration**: Specify directories via command line arguments
-- **Security**: Path validation to prevent directory traversal attacks
+A Model Context Protocol (MCP) server built in Go with **read-only** access to
+markdown documents from configured local directories. The scope of this MCP
+server is explicitly constrained to read-only to minimise security concerns.
 
 ## Resources
 
@@ -24,6 +16,7 @@ including file metadata.
 ### `read_markdown_file`
 
 Read the content of a specific markdown file by providing either:
+
 - Full or relative file path (e.g., `docs/api.md`, `./guides/setup.md`)
 - Just the filename (e.g., `README.md`, `api`, `setup`) - the server will search all configured directories
 
