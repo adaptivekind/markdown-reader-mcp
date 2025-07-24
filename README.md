@@ -1,219 +1,266 @@
 # Markdown Reader MCP Server
 
-A Model Context Protocol (MCP) server built in Go with **read-only** access to
+A Model Context Protocol (MCP) server built in Go with **READ-ONLY** access to
 markdown documents from configured local directories. The scope of this MCP
-server is explicitly constrained to read-only to minimise security concerns.
+server is explicitly constrained to read-only access, and restricted to only
+being able to access files that have the **.md**. This explicit constraint helps
+with peace of mind.
 
-The server includes debug logging that tracks each tool call with input parameters, execution time, and results.
+## TL;DR
 
-## Tools
+**Quick Start:**
 
-### `find_markdown_files`
+1. Build: `go build`
+2. Configure: Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`
+   with your directories
+3. Add to Claude Code: `claude mcp add markdown-reader -- markdown-reader-mcp`
+4. Add to Claude Desktop: Add to your MCP settings file
+5. Use: Ask Claude to "find markdown files" or "read README"
 
-Find markdown files in configured directories with optional filtering and pagination.
+**What it does:**
 
-**Parameters:**
-- `query` (optional): Filter files by name containing this string. If not provided, matches all files.
-- `page_size` (optional): Limit number of results returned. Default is 50, configurable maximum in config file (default max: 500).
+- 🔍 **Find markdown files** with optional filtering and pagination
+- 📖 **Read markdown files** by filename across multiple directories
+- 🚫 **Ignores directories** like `.git`, `node_modules` by default
 
-Returns a JSON list of matching markdown files with metadata (path, name, relativePath) along with directory list and file count.
+## Use Case : Master prompt
 
-### `read_markdown_file`
+A primary use case of this is the provisioning of a controlled personal
+collection of prompts and context that can be applied for all local agents. For
+example, this can be achieved by providing a master prompt in a file called
+`my-tone-of-voice.md` and then referencing this by prompting. "Please use
+my-tone-of-voice.md at all times." The agent will discover your master prompt
+and use going forward. This `my-tone-of-voice.md` prompt can reference other
+prompts, for example, by including:
 
-Read the content of a specific markdown file by providing just the filename:
-
-- Filename with extension (e.g., `README.md`, `api.md`)
-- Filename without extension (e.g., `README`, `api`) - `.md` extension will be added automatically
-
-The server will search all configured directories and return the first match found.
-Path traversal (e.g., `../`, `docs/api.md`) is not supported for security reasons.
-
-## Usage
-
-The server can be configured in two ways:
-
-### Command-line Arguments
-
-Run the server with directories specified as arguments:
-
-```sh
-# Scan single directory
-./markdown-reader-mcp ./my-path
-
-# Scan multiple directories
-./markdown-reader-mcp /path/to/docs /another/path ./local/docs
+```markdown
+- You MUST follow guidance in `my-universal-guidance.md`
 ```
 
-### Configuration File
+And storing universal guidance in `my-universal-guidance.md`
 
-Create a configuration file at `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
+```markdown
+# My universal guidance
 
-```json
-{
-  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"],
-  "max_page_size": 100,
-  "debug_logging": true,
-  "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"]
-}
+## Requirements
+
+- You MUST not use an em dash "—", you can use a normal dash "-".
+- You MUST write in a natural and serious voice.
+- You MUST NOT add humorous anecdotes.
+- You MUST NOT show excessive enthusiasm.
+
+## Finding reference material
+
+- If you need to find information about myself, please see if the material can
+  be found in the markdown files from the Markdown Reader MCP.
+- If you need to search the web for information, please also search for material
+  in the markdown files from the Markdown Reader MCP.
 ```
 
-Then run without arguments:
+This in turn then can discover any notes (in your markdown directories) about
+yourself as needed.
+
+## Installation & Setup
+
+### 1. Build the Server
 
 ```sh
-./markdown-reader-mcp
-```
-
-**Configuration Options:**
-- `directories`: Array of directory paths to scan for markdown files
-- `max_page_size` (optional): Maximum number of results that can be returned in a single page. Defaults to 500 if not specified.
-- `debug_logging` (optional): Enable detailed debug logging for each tool call. Defaults to false if not specified.
-- `ignore_dirs` (optional): Array of regex patterns for directory names to ignore during scanning. Defaults to `["\\.git$", "node_modules$"]` if not specified.
-
-**Note:**
-- Command-line arguments take precedence over the configuration file. If both are provided, the command-line arguments will be used.
-- Tilde (`~`) in directory paths will be automatically expanded to your home directory.
-
-## Build the server
-
-```sh
+git clone <this-repo>
+cd markdown-reader-mcp
 go build
 ```
 
-## Install
+Install locally:
 
 ```sh
 go install
 ```
 
-## Integration with Claude Code
+### 2. Configure Directories
 
-To use this MCP server with Claude Code, you need to configure it in your MCP settings.
+**Option A: Configuration File (Recommended)**
 
-### Configure Claude Code
-
-Add the server to your Claude Code MCP configuration using one of these methods:
-
-```sh
-claude mcp add markdown-reader -- markdown-reader-mcp ~/my-markdown-directory
-```
-
-Or, if using the configuration file approach:
-
-```sh
-claude mcp add markdown-reader -- markdown-reader-mcp
-```
-
-Add server for all your projects on this machine
-
-```sh
-claude mcp add markdown-reader -s user -- markdown-reader-mcp ~/my-markdown-directory
-```
-
-Or with configuration file:
-
-```sh
-claude mcp add markdown-reader -s user -- markdown-reader-mcp
-```
-
-List MCP servers installed
-
-```sh
-claude mcp list
-```
-
-Remove MCP server
-
-```sh
-claude mcp remove markdown-reader
-```
-
-### Available Capabilities
-
-Once configured, Claude Code will have access to:
-
-**Tools:**
-
-- `find_markdown_files` - Find markdown files with optional query filtering and pagination
-- `read_markdown_file` - Read content of specific markdown files
-
-### Verify Configuration
-
-In Claude code type `/mcp` to verify that the MCP server is registered and to view the capabilities.
-
-### Example Usage
-
-After setup, you can ask Claude Code to:
-
-- "Show me all markdown files in the project" (uses the `find_markdown_files` tool)
-- "Find files containing 'api' in the name" (uses the `find_markdown_files` tool with query parameter)
-- "Show me the first 10 markdown files" (uses the `find_markdown_files` tool with page_size parameter)
-- "Read the content of README" (uses `read_markdown_file` tool with filename)
-- "Read the content of README.md" (uses `read_markdown_file` tool with filename)
-- "Show me the api file" (uses `read_markdown_file` tool, searches for `api.md`)
-
-## Debug Logging
-
-When enabled via the `debug_logging` configuration option, the server logs detailed debug information for each tool call, including:
-
-- Input parameters (query, page_size, filename)
-- Execution time for each operation
-- Number of results found or bytes read
-- Error conditions and security blocks
-
-Debug logs are prefixed with `[DEBUG]` and include timing information to help with performance monitoring. Debug logging is **disabled by default** for performance and to reduce log noise.
-
-## Directory Filtering
-
-The server supports ignoring specific directories during scanning using regex patterns. This is useful for excluding version control directories, dependency folders, and other directories that shouldn't be included in markdown file discovery.
-
-### Default Ignored Directories
-
-By default, the following directories are ignored:
-- `.git` - Git version control directories
-- `node_modules` - Node.js dependency directories
-
-### Custom Ignore Patterns
-
-You can specify custom regex patterns in the configuration file to ignore additional directories:
+Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
 
 ```json
 {
-  "directories": ["~/projects"],
+  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"],
+  "max_page_size": 100,
+  "debug_logging": false,
+  "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"]
+}
+```
+
+**Option B: Command-line Arguments**
+
+```sh
+./markdown-reader-mcp ~/documents/notes ~/projects/docs
+```
+
+### 3. Integration with Claude
+
+#### Claude Code CLI
+
+```sh
+# Add for current project
+claude mcp add markdown-reader -- markdown-reader-mcp
+
+# Add globally for all projects
+claude mcp add markdown-reader -s user -- markdown-reader-mcp
+
+# Verify installation
+claude mcp list
+
+# Remove MCP
+claude mcp remove markdown-reader
+```
+
+#### Claude Desktop App
+
+Add to your Claude Desktop MCP settings file:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+**Linux:** `~/.config/claude-desktop/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "markdown-reader": {
+      "command": "/path/to/markdown-reader-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+Or with command-line arguments:
+
+```json
+{
+  "mcpServers": {
+    "markdown-reader": {
+      "command": "/path/to/markdown-reader-mcp",
+      "args": ["/path/to/your/docs", "/another/path"]
+    }
+  }
+}
+```
+
+**Note:** Use absolute paths in Claude Desktop configuration.
+
+## Usage Examples
+
+Once configured, you can ask Claude:
+
+- **"Show me all markdown files in the project"** → Uses `find_markdown_files`
+- **"Find files containing 'api' in the name"** → Uses `find_markdown_files` with query
+- **"Show me the first 10 markdown files"** → Uses `find_markdown_files` with pagination
+- **"Read the content of README"** → Uses `read_markdown_file`
+- **"What's in the api.md file?"** → Uses `read_markdown_file`
+
+## Configuration Reference
+
+### Configuration File Options
+
+- **`directories`**: Array of directory paths to scan for markdown files
+- **`max_page_size`** (optional): Maximum results per page. Default: 500
+- **`debug_logging`** (optional): Enable detailed debug logging. Default: false
+- **`ignore_dirs`** (optional): Regex patterns for directories to ignore. Default: `["\\.git$", "node_modules$"]`
+
+### Directory Filtering
+
+The server automatically ignores common directories that shouldn't contain user documentation:
+
+**Default ignored:**
+
+- `.git` - Version control directories
+- `node_modules` - Node.js dependencies
+
+**Custom patterns example:**
+
+```json
+{
   "ignore_dirs": [
-    "\\.git$",           // Ignore .git directories
-    "node_modules$",     // Ignore node_modules directories
-    "vendor$",           // Ignore vendor directories (e.g., Go, PHP)
-    "\\.vscode$",        // Ignore .vscode directories
-    "target$",           // Ignore target directories (e.g., Rust, Java)
-    "dist$",             // Ignore dist/build output directories
-    "coverage$"          // Ignore test coverage directories
+    "\\.git$", // Git directories
+    "node_modules$", // Node.js dependencies
+    "target$", // Rust/Java build output
+    "dist$" // Build output
   ]
 }
 ```
 
-### Pattern Syntax
+**Pattern syntax:**
 
-- Patterns use Go's `regexp` package syntax
-- Use `$` to match end of directory name (recommended to avoid partial matches)
-- Use `^` to match beginning of directory name
-- Escape special regex characters with backslashes (e.g., `\\.git$` for `.git`)
-- Invalid regex patterns are logged and ignored (if debug logging is enabled)
+- Use Go `regexp` syntax
+- End with `$` to match directory name exactly
+- Escape dots: `\\.git$` not `.git$`
+- Invalid patterns are logged and ignored
 
-### Security Note
+## Tools Reference
 
-Directory filtering helps improve performance and prevents accidental exposure of sensitive directories like `.git` that might contain configuration or history information.
+### `find_markdown_files`
 
-## Development Setup
+Find markdown files with optional filtering and pagination.
 
-1. Clone the repository
-2. Install pre-commit framework:
+**Parameters:**
+
+- `query` (optional): Filter files by name containing this string
+- `page_size` (optional): Limit results (default: 50, max: configurable)
+
+**Returns:** JSON with file list, metadata, and count.
+
+### `read_markdown_file`
+
+Read content of a specific markdown file by filename.
+
+**Parameters:**
+
+- `filename` (required): File name with or without `.md` extension
+
+**Returns:** File content as text.
+
+**Security:** Only accepts filenames (no paths). Searches configured directories automatically.
+
+## Debug Logging
+
+Enable with `"debug_logging": true` in config file.
+
+## Verification
+
+### Claude Code
 
 ```sh
-pip install pre-commit
+# Check MCP server status
+claude mcp list
+
+# Test MCP tools in Claude Code
+/mcp
 ```
 
-3. Install the pre-commit hooks:
+### Claude Desktop
+
+Look for the server in the MCP section of Claude Desktop settings, or check the logs for startup messages.
+
+### Manual Testing
 
 ```sh
-pre-commit install
+# Start server (will show startup logs)
+./markdown-reader-mcp ~/your/docs
+
+# Look for:
+# "Scanning directories: [...]"
+# "Ignoring directories matching patterns: [...]"
+# "Starting Markdown Reader MCP server..."
 ```
+
+## Development
+
+1. **Clone repository**
+2. **Install pre-commit** (optional):
+   ```sh
+   pip install pre-commit
+   pre-commit install
+   ```
+3. **Run tests**: `go test -v`
+4. **Build**: `go build`
