@@ -22,3 +22,7 @@ repos:
         language: system
         pass_filenames: false
         types: [go]
+      - id: check-untracked
+        name: check-untracked
+        entry: scripts/check-untracked.sh
+        language: system
