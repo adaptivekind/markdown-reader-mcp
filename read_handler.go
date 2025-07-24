@@ -8,18 +8,33 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
 func handleReadMarkdownFile(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	startTime := time.Now()
+
 	filename, err := req.RequireString("filename")
 	if err != nil {
+		if config.DebugLogging {
+			duration := time.Since(startTime)
+			log.Printf("[DEBUG] read_markdown_file failed to parse filename after %v: %v", duration, err)
+		}
 		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if config.DebugLogging {
+		log.Printf("[DEBUG] read_markdown_file called with filename='%s'", filename)
 	}
 
 	// Security check: ensure the file path doesn't contain directory traversal
 	if strings.Contains(filename, "..") {
+		if config.DebugLogging {
+			duration := time.Since(startTime)
+			log.Printf("[DEBUG] read_markdown_file blocked directory traversal attempt after %v: filename='%s'", duration, filename)
+		}
 		return mcp.NewToolResultError("invalid file path: directory traversal not allowed"), nil
 	}
 
@@ -30,25 +45,53 @@ func handleReadMarkdownFile(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 		// Search for the file by name across all configured directories
 		found, err := findFirstFileByName(filename)
 		if err != nil {
+			if config.DebugLogging {
+				duration := time.Since(startTime)
+				log.Printf("[DEBUG] read_markdown_file error searching for file after %v: %v", duration, err)
+			}
 			return mcp.NewToolResultError(fmt.Sprintf("error searching for file: %v", err)), nil
 		}
 		if found == "" {
+			if config.DebugLogging {
+				duration := time.Since(startTime)
+				log.Printf("[DEBUG] read_markdown_file file not found after %v: filename='%s'", duration, filename)
+			}
 			return mcp.NewToolResultError(fmt.Sprintf("file not found: %s", filename)), nil
 		}
 		targetFile = found
+		if config.DebugLogging {
+			log.Printf("[DEBUG] read_markdown_file found file: %s", targetFile)
+		}
 	} else {
+		if config.DebugLogging {
+			duration := time.Since(startTime)
+			log.Printf("[DEBUG] read_markdown_file rejected path-like filename after %v: filename='%s'", duration, filename)
+		}
 		return mcp.NewToolResultError("filename looks like a path, it should be just the name of file"), nil
 	}
 
 	// Check if file exists and is a markdown file
 	if !strings.HasSuffix(strings.ToLower(targetFile), ".md") {
+		if config.DebugLogging {
+			duration := time.Since(startTime)
+			log.Printf("[DEBUG] read_markdown_file rejected non-markdown file after %v: file='%s'", duration, targetFile)
+		}
 		return mcp.NewToolResultError(fmt.Sprintf("file is not a markdown file: %s", targetFile)), nil
 	}
 
 	// Read the file
 	content, err := os.ReadFile(targetFile)
 	if err != nil {
+		if config.DebugLogging {
+			duration := time.Since(startTime)
+			log.Printf("[DEBUG] read_markdown_file failed to read file after %v: %v", duration, err)
+		}
 		return mcp.NewToolResultError(fmt.Sprintf("failed to read file %s: %v", targetFile, err)), nil
+	}
+
+	if config.DebugLogging {
+		duration := time.Since(startTime)
+		log.Printf("[DEBUG] read_markdown_file completed successfully in %v, read %d bytes from '%s'", duration, len(content), targetFile)
 	}
 
 	return mcp.NewToolResultText(string(content)), nil

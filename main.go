@@ -13,8 +13,9 @@ import (
 )
 
 type Config struct {
-	Directories []string `json:"directories"`
-	MaxPageSize int      `json:"max_page_size,omitempty"`
+	Directories  []string `json:"directories"`
+	MaxPageSize  int      `json:"max_page_size,omitempty"`
+	DebugLogging bool     `json:"debug_logging,omitempty"`
 }
 
 var config Config
@@ -91,9 +92,15 @@ func main() {
 		config.Directories = args
 		// Set default max page size for command-line usage
 		config.MaxPageSize = 500
+		// Debug logging is disabled by default for command-line usage
+		config.DebugLogging = false
 	}
 
 	log.Printf("Scanning directories: %v", config.Directories)
+
+	if config.DebugLogging {
+		log.Printf("[CONFIG] Debug logging is enabled")
+	}
 
 	// Create MCP server
 	s := server.NewMCPServer(

@@ -4,6 +4,8 @@ A Model Context Protocol (MCP) server built in Go with **read-only** access to
 markdown documents from configured local directories. The scope of this MCP
 server is explicitly constrained to read-only to minimise security concerns.
 
+The server includes debug logging that tracks each tool call with input parameters, execution time, and results.
+
 ## Tools
 
 ### `find_markdown_files`
@@ -49,7 +51,8 @@ Create a configuration file at `~/.config/markdown-reader-mcp/markdown-reader-mc
 ```json
 {
   "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"],
-  "max_page_size": 100
+  "max_page_size": 100,
+  "debug_logging": true
 }
 ```
 
@@ -62,6 +65,7 @@ Then run without arguments:
 **Configuration Options:**
 - `directories`: Array of directory paths to scan for markdown files
 - `max_page_size` (optional): Maximum number of results that can be returned in a single page. Defaults to 500 if not specified.
+- `debug_logging` (optional): Enable detailed debug logging for each tool call. Defaults to false if not specified.
 
 **Note:**
 - Command-line arguments take precedence over the configuration file. If both are provided, the command-line arguments will be used.
@@ -144,6 +148,17 @@ After setup, you can ask Claude Code to:
 - "Read the content of README" (uses `read_markdown_file` tool with filename)
 - "Read the content of README.md" (uses `read_markdown_file` tool with filename)
 - "Show me the api file" (uses `read_markdown_file` tool, searches for `api.md`)
+
+## Debug Logging
+
+When enabled via the `debug_logging` configuration option, the server logs detailed debug information for each tool call, including:
+
+- Input parameters (query, page_size, filename)
+- Execution time for each operation
+- Number of results found or bytes read
+- Error conditions and security blocks
+
+Debug logs are prefixed with `[DEBUG]` and include timing information to help with performance monitoring. Debug logging is **disabled by default** for performance and to reduce log noise.
 
 ## Development Setup
 

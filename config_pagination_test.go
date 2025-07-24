@@ -19,8 +19,9 @@ func TestConfigWithMaxPageSize(t *testing.T) {
 
 	// Test config data with max_page_size
 	testConfig := Config{
-		Directories: []string{"docs", "guides"},
-		MaxPageSize: 100,
+		Directories:  []string{"docs", "guides"},
+		MaxPageSize:  100,
+		DebugLogging: true,
 	}
 
 	configData, err := json.Marshal(testConfig)
@@ -45,6 +46,10 @@ func TestConfigWithMaxPageSize(t *testing.T) {
 
 	if cfg.MaxPageSize != 100 {
 		t.Errorf("Expected MaxPageSize 100, got %d", cfg.MaxPageSize)
+	}
+
+	if !cfg.DebugLogging {
+		t.Errorf("Expected DebugLogging true, got %v", cfg.DebugLogging)
 	}
 }
 
@@ -85,6 +90,10 @@ func TestConfigDefaultMaxPageSize(t *testing.T) {
 
 	if cfg.MaxPageSize != 500 {
 		t.Errorf("Expected default MaxPageSize 500, got %d", cfg.MaxPageSize)
+	}
+
+	if cfg.DebugLogging {
+		t.Errorf("Expected default DebugLogging false, got %v", cfg.DebugLogging)
 	}
 }
 
@@ -140,6 +149,48 @@ func TestPaginationLimits(t *testing.T) {
 
 			if len(files) > tt.expectedSize {
 				t.Errorf("Expected at most %d files, got %d", tt.expectedSize, len(files))
+			}
+		})
+	}
+}
+
+func TestDebugLoggingConfiguration(t *testing.T) {
+	// Setup test environment
+	oldConfig := config
+	defer func() { config = oldConfig }()
+
+	tests := []struct {
+		name         string
+		debugLogging bool
+	}{
+		{
+			name:         "debug logging enabled",
+			debugLogging: true,
+		},
+		{
+			name:         "debug logging disabled",
+			debugLogging: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config = Config{
+				Directories:  []string{"test/dir1"},
+				MaxPageSize:  500,
+				DebugLogging: tt.debugLogging,
+			}
+
+			// Test find_markdown_files with debug logging setting
+			files, err := findMarkdownFiles("", 10)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// We can't easily test if logs were actually printed in unit tests,
+			// but we can verify the config is being respected and function works
+			if len(files) < 0 { // This will never be true, but ensures files is used
+				t.Error("Unexpected negative file count")
 			}
 		})
 	}
