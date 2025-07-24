@@ -356,7 +356,7 @@ func TestMarkdownFileRead(t *testing.T) {
 	}
 
 	// Test reading a specific markdown file using the tool
-	testFile := "api.md"
+	testFile := "bar.md"
 	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
 		"filename": testFile,
 	}))
@@ -378,8 +378,8 @@ func TestMarkdownFileRead(t *testing.T) {
 	text := textContent["text"].(string)
 
 	// Verify content contains expected text
-	if !strings.Contains(text, "# API Documentation") {
-		t.Error("Expected file content to contain API Documentation header")
+	if !strings.Contains(text, "# Bar") {
+		t.Error("Expected file content to contain bar header")
 	}
 }
 
@@ -395,7 +395,7 @@ func TestMarkdownFileReadByName(t *testing.T) {
 
 	// Test reading a file by just its name (should find api.md in test_data/docs/)
 	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
-		"filename": "api.md",
+		"filename": "bar.md",
 	}))
 	if err != nil {
 		t.Fatalf("Failed to read markdown file by name: %v", err)
@@ -415,16 +415,16 @@ func TestMarkdownFileReadByName(t *testing.T) {
 	text := textContent["text"].(string)
 
 	// Verify content contains expected text
-	if !strings.Contains(text, "# API Documentation") {
-		t.Error("Expected file content to contain API Documentation header")
+	if !strings.Contains(text, "# Bar") {
+		t.Error("Expected file content to contain bar header")
 	}
 
 	// Test reading a file by name without extension
 	response, err = client.SendRequest(createToolCallRequest(3, "read_markdown_file", map[string]any{
-		"filename": "README",
+		"filename": "foo",
 	}))
 	if err != nil {
-		t.Fatalf("Failed to read README by name: %v", err)
+		t.Fatalf("Failed to read foo by name: %v", err)
 	}
 
 	result, ok = response["result"].(map[string]any)
@@ -441,8 +441,8 @@ func TestMarkdownFileReadByName(t *testing.T) {
 	text = textContent["text"].(string)
 
 	// Verify content contains expected text from test_data/README.md
-	if !strings.Contains(text, "# Test Data") {
-		t.Error("Expected file content to contain Test Data header")
+	if !strings.Contains(text, "# Foo") {
+		t.Error("Expected file content to contain Foo header")
 	}
 }
 
