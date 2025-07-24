@@ -127,11 +127,11 @@ func (c *MCPTestClient) SendRequest(request any) (map[string]any, error) {
 
 // Test helper functions
 func createInitializeRequest(id int) map[string]any {
-	return map[string]interface{}{
+	return map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  "initialize",
-		"params": map[string]interface{}{
+		"params": map[string]any{
 			"protocolVersion": "2024-11-05",
 			"capabilities": map[string]any{
 				"resources": map[string]any{},
@@ -145,41 +145,41 @@ func createInitializeRequest(id int) map[string]any {
 	}
 }
 
-func createResourceListRequest(id int) map[string]interface{} {
-	return map[string]interface{}{
+func createResourceListRequest(id int) map[string]any {
+	return map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  "resources/list",
-		"params":  map[string]interface{}{},
+		"params":  map[string]any{},
 	}
 }
 
-func createResourceReadRequest(id int, uri string) map[string]interface{} {
-	return map[string]interface{}{
+func createResourceReadRequest(id int, uri string) map[string]any {
+	return map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  "resources/read",
-		"params": map[string]interface{}{
+		"params": map[string]any{
 			"uri": uri,
 		},
 	}
 }
 
-func createToolListRequest(id int) map[string]interface{} {
-	return map[string]interface{}{
+func createToolListRequest(id int) map[string]any {
+	return map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  "tools/list",
-		"params":  map[string]interface{}{},
+		"params":  map[string]any{},
 	}
 }
 
-func createToolCallRequest(id int, name string, arguments map[string]interface{}) map[string]interface{} {
-	return map[string]interface{}{
+func createToolCallRequest(id int, name string, arguments map[string]any) map[string]any {
+	return map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  "tools/call",
-		"params": map[string]interface{}{
+		"params": map[string]any{
 			"name":      name,
 			"arguments": arguments,
 		},
@@ -313,7 +313,7 @@ func TestMarkdownFilesList(t *testing.T) {
 	text := content["text"].(string)
 
 	// Parse the JSON response
-	var listData map[string]interface{}
+	var listData map[string]any
 	if err := json.Unmarshal([]byte(text), &listData); err != nil {
 		t.Fatalf("Failed to parse markdown list JSON: %v", err)
 	}
@@ -332,7 +332,7 @@ func TestMarkdownFilesList(t *testing.T) {
 	// Check that we have files from test_data
 	foundTestFile := false
 	for _, file := range files {
-		fileData := file.(map[string]interface{})
+		fileData := file.(map[string]any)
 		path := fileData["path"].(string)
 		if strings.Contains(path, "test_data") {
 			foundTestFile = true
@@ -357,24 +357,24 @@ func TestMarkdownFileRead(t *testing.T) {
 
 	// Test reading a specific markdown file using the tool
 	testFile := "test_data/docs/api.md"
-	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]interface{}{
+	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
 		"file_path": testFile,
 	}))
 	if err != nil {
 		t.Fatalf("Failed to read markdown file: %v", err)
 	}
 
-	result, ok := response["result"].(map[string]interface{})
+	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object")
 	}
 
-	content, ok := result["content"].([]interface{})
+	content, ok := result["content"].([]any)
 	if !ok || len(content) == 0 {
 		t.Fatalf("Expected content array")
 	}
 
-	textContent := content[0].(map[string]interface{})
+	textContent := content[0].(map[string]any)
 	text := textContent["text"].(string)
 
 	// Verify content contains expected text
@@ -394,24 +394,24 @@ func TestMarkdownFileReadByName(t *testing.T) {
 	}
 
 	// Test reading a file by just its name (should find api.md in test_data/docs/)
-	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]interface{}{
+	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
 		"file_path": "api.md",
 	}))
 	if err != nil {
 		t.Fatalf("Failed to read markdown file by name: %v", err)
 	}
 
-	result, ok := response["result"].(map[string]interface{})
+	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object")
 	}
 
-	content, ok := result["content"].([]interface{})
+	content, ok := result["content"].([]any)
 	if !ok || len(content) == 0 {
 		t.Fatalf("Expected content array")
 	}
 
-	textContent := content[0].(map[string]interface{})
+	textContent := content[0].(map[string]any)
 	text := textContent["text"].(string)
 
 	// Verify content contains expected text
@@ -420,24 +420,24 @@ func TestMarkdownFileReadByName(t *testing.T) {
 	}
 
 	// Test reading a file by name without extension
-	response, err = client.SendRequest(createToolCallRequest(3, "read_markdown_file", map[string]interface{}{
+	response, err = client.SendRequest(createToolCallRequest(3, "read_markdown_file", map[string]any{
 		"file_path": "README",
 	}))
 	if err != nil {
 		t.Fatalf("Failed to read README by name: %v", err)
 	}
 
-	result, ok = response["result"].(map[string]interface{})
+	result, ok = response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object")
 	}
 
-	content, ok = result["content"].([]interface{})
+	content, ok = result["content"].([]any)
 	if !ok || len(content) == 0 {
 		t.Fatalf("Expected content array")
 	}
 
-	textContent = content[0].(map[string]interface{})
+	textContent = content[0].(map[string]any)
 	text = textContent["text"].(string)
 
 	// Verify content contains expected text from test_data/README.md
@@ -462,12 +462,12 @@ func TestToolsList(t *testing.T) {
 		t.Fatalf("Failed to list tools: %v", err)
 	}
 
-	result, ok := response["result"].(map[string]interface{})
+	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object")
 	}
 
-	tools, ok := result["tools"].([]interface{})
+	tools, ok := result["tools"].([]any)
 	if !ok {
 		t.Fatalf("Expected tools array")
 	}
@@ -478,7 +478,7 @@ func TestToolsList(t *testing.T) {
 	}
 
 	for _, tool := range tools {
-		toolData := tool.(map[string]interface{})
+		toolData := tool.(map[string]any)
 		name := toolData["name"].(string)
 		if _, exists := expectedTools[name]; exists {
 			expectedTools[name] = true
@@ -503,7 +503,7 @@ func TestErrorHandling(t *testing.T) {
 	}
 
 	// Test reading non-existent file using the tool
-	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]interface{}{
+	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
 		"file_path": "nonexistent.md",
 	}))
 	if err != nil {
@@ -511,17 +511,17 @@ func TestErrorHandling(t *testing.T) {
 	}
 
 	// Should get a result with error content
-	result, ok := response["result"].(map[string]interface{})
+	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object")
 	}
 
-	content, ok := result["content"].([]interface{})
+	content, ok := result["content"].([]any)
 	if !ok || len(content) == 0 {
 		t.Fatalf("Expected content array")
 	}
 
-	textContent := content[0].(map[string]interface{})
+	textContent := content[0].(map[string]any)
 	text := textContent["text"].(string)
 
 	// Should contain error message about file not found
