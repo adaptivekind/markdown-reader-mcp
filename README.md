@@ -8,8 +8,13 @@ server is explicitly constrained to read-only to minimise security concerns.
 
 ### `find_markdown_files`
 
-Find all markdown files in configured directories. Returns a JSON list of all markdown files found,
-including file metadata (path, name, relativePath) along with directory list and file count.
+Find markdown files in configured directories with optional filtering and pagination.
+
+**Parameters:**
+- `query` (optional): Filter files by name containing this string. If not provided, matches all files.
+- `page_size` (optional): Limit number of results returned. Default is 50, configurable maximum in config file (default max: 500).
+
+Returns a JSON list of matching markdown files with metadata (path, name, relativePath) along with directory list and file count.
 
 ### `read_markdown_file`
 
@@ -43,7 +48,8 @@ Create a configuration file at `~/.config/markdown-reader-mcp/markdown-reader-mc
 
 ```json
 {
-  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"]
+  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"],
+  "max_page_size": 100
 }
 ```
 
@@ -52,6 +58,10 @@ Then run without arguments:
 ```sh
 ./markdown-reader-mcp
 ```
+
+**Configuration Options:**
+- `directories`: Array of directory paths to scan for markdown files
+- `max_page_size` (optional): Maximum number of results that can be returned in a single page. Defaults to 500 if not specified.
 
 **Note:**
 - Command-line arguments take precedence over the configuration file. If both are provided, the command-line arguments will be used.
@@ -117,7 +127,7 @@ Once configured, Claude Code will have access to:
 
 **Tools:**
 
-- `find_markdown_files` - Get a JSON list of all markdown files in configured directories
+- `find_markdown_files` - Find markdown files with optional query filtering and pagination
 - `read_markdown_file` - Read content of specific markdown files
 
 ### Verify Configuration
@@ -129,6 +139,8 @@ In Claude code type `/mcp` to verify that the MCP server is registered and to vi
 After setup, you can ask Claude Code to:
 
 - "Show me all markdown files in the project" (uses the `find_markdown_files` tool)
+- "Find files containing 'api' in the name" (uses the `find_markdown_files` tool with query parameter)
+- "Show me the first 10 markdown files" (uses the `find_markdown_files` tool with page_size parameter)
 - "Read the content of README" (uses `read_markdown_file` tool with filename)
 - "Read the content of README.md" (uses `read_markdown_file` tool with filename)
 - "Show me the api file" (uses `read_markdown_file` tool, searches for `api.md`)

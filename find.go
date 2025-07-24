@@ -8,13 +8,42 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-func handleFindAllMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	files, err := findAllMarkdownFiles()
+func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Parse query parameter
+	query := ""
+	if req.Params.Arguments != nil {
+		if argsMap, ok := req.Params.Arguments.(map[string]any); ok {
+			if queryParam, exists := argsMap["query"]; exists {
+				if queryStr, ok := queryParam.(string); ok {
+					query = queryStr
+				}
+			}
+		}
+	}
+
+	// Parse page_size parameter
+	pageSize := 50 // Default page size
+	if req.Params.Arguments != nil {
+		if argsMap, ok := req.Params.Arguments.(map[string]any); ok {
+			if pageSizeParam, exists := argsMap["page_size"]; exists {
+				if pageSizeStr, ok := pageSizeParam.(string); ok {
+					if parsedSize, err := strconv.Atoi(pageSizeStr); err == nil {
+						pageSize = parsedSize
+					}
+				} else if pageSizeFloat, ok := pageSizeParam.(float64); ok {
+					pageSize = int(pageSizeFloat)
+				}
+			}
+		}
+	}
+
+	files, err := findMarkdownFiles(query, pageSize)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to find markdown files: %v", err)), nil
 	}
@@ -43,9 +72,10 @@ func handleFindAllMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*
 	return mcp.NewToolResultText(string(jsonData)), nil
 }
 
-func findAllMarkdownFiles() ([]string, error) {
-	var markdownFiles []string
+func findMarkdownFiles(query string, pageSize int) ([]string, error) {
+	var allMarkdownFiles []string
 
+	// Collect all markdown files first
 	for _, dir := range config.Directories {
 		// Convert relative paths to absolute
 		absDir, err := filepath.Abs(dir)
@@ -66,7 +96,7 @@ func findAllMarkdownFiles() ([]string, error) {
 			}
 
 			if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
-				markdownFiles = append(markdownFiles, path)
+				allMarkdownFiles = append(allMarkdownFiles, path)
 			}
 
 			return nil
@@ -76,5 +106,28 @@ func findAllMarkdownFiles() ([]string, error) {
 		}
 	}
 
-	return markdownFiles, nil
+	// Filter by query if provided
+	var filteredFiles []string
+	if query != "" {
+		queryLower := strings.ToLower(query)
+		for _, file := range allMarkdownFiles {
+			filename := strings.ToLower(filepath.Base(file))
+			if strings.Contains(filename, queryLower) {
+				filteredFiles = append(filteredFiles, file)
+			}
+		}
+	} else {
+		filteredFiles = allMarkdownFiles
+	}
+
+	// Apply pagination
+	if pageSize <= 0 || pageSize > config.MaxPageSize {
+		pageSize = 50 // Default page size
+	}
+
+	if len(filteredFiles) <= pageSize {
+		return filteredFiles, nil
+	}
+
+	return filteredFiles[:pageSize], nil
 }
