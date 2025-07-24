@@ -50,7 +50,7 @@ func main() {
 	s.AddTool(
 		mcp.NewTool("read_markdown_file",
 			mcp.WithDescription("Read the contents of a specific markdown file by name"),
-			mcp.WithString("name",
+			mcp.WithString("filename",
 				mcp.Required(),
 				mcp.Description("Name of the markdown file (e.g., 'README' or 'README.md')"),
 			),

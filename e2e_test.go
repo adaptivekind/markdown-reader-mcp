@@ -356,9 +356,9 @@ func TestMarkdownFileRead(t *testing.T) {
 	}
 
 	// Test reading a specific markdown file using the tool
-	testFile := "test_data/docs/api.md"
+	testFile := "api.md"
 	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
-		"file_path": testFile,
+		"filename": testFile,
 	}))
 	if err != nil {
 		t.Fatalf("Failed to read markdown file: %v", err)
@@ -395,7 +395,7 @@ func TestMarkdownFileReadByName(t *testing.T) {
 
 	// Test reading a file by just its name (should find api.md in test_data/docs/)
 	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
-		"file_path": "api.md",
+		"filename": "api.md",
 	}))
 	if err != nil {
 		t.Fatalf("Failed to read markdown file by name: %v", err)
@@ -421,7 +421,7 @@ func TestMarkdownFileReadByName(t *testing.T) {
 
 	// Test reading a file by name without extension
 	response, err = client.SendRequest(createToolCallRequest(3, "read_markdown_file", map[string]any{
-		"file_path": "README",
+		"filename": "README",
 	}))
 	if err != nil {
 		t.Fatalf("Failed to read README by name: %v", err)
@@ -504,7 +504,7 @@ func TestErrorHandling(t *testing.T) {
 
 	// Test reading non-existent file using the tool
 	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
-		"file_path": "nonexistent.md",
+		"filename": "nonexistent.md",
 	}))
 	if err != nil {
 		t.Fatalf("Failed to send request: %v", err)

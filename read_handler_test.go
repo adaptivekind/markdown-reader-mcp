@@ -132,41 +132,40 @@ func TestHandleReadMarkdownFile(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		filePath    string
+		filename    string
 		wantError   bool
 		wantContent string
 	}{
 		{
-			name:        "read existing file by full path",
-			filePath:    testFile,
-			wantError:   false,
-			wantContent: testContent,
-		},
-		{
 			name:        "read existing file by name only",
-			filePath:    "test.md",
+			filename:    "test.md",
 			wantError:   false,
 			wantContent: testContent,
 		},
 		{
 			name:        "read existing file by name without extension",
-			filePath:    "test",
+			filename:    "test",
 			wantError:   false,
 			wantContent: testContent,
 		},
 		{
+			name:      "read existing file by full path",
+			filename:  testFile,
+			wantError: true,
+		},
+		{
 			name:      "read non-existent file",
-			filePath:  "nonexistent.md",
+			filename:  "nonexistent.md",
 			wantError: true,
 		},
 		{
 			name:      "directory traversal attempt",
-			filePath:  "../../../etc/passwd",
+			filename:  "../../../etc/passwd",
 			wantError: true,
 		},
 		{
 			name:      "read non-markdown file",
-			filePath:  "test.txt",
+			filename:  "test.txt",
 			wantError: true,
 		},
 	}
@@ -177,7 +176,7 @@ func TestHandleReadMarkdownFile(t *testing.T) {
 				Params: mcp.CallToolParams{
 					Name: "read_markdown_file",
 					Arguments: map[string]any{
-						"file_path": tt.filePath,
+						"filename": tt.filename,
 					},
 				},
 			}

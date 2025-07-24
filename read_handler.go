@@ -13,54 +13,31 @@ import (
 )
 
 func handleReadMarkdownFile(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	filePath, err := req.RequireString("file_path")
+	filename, err := req.RequireString("filename")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	// Security check: ensure the file path doesn't contain directory traversal
-	if strings.Contains(filePath, "..") {
+	if strings.Contains(filename, "..") {
 		return mcp.NewToolResultError("invalid file path: directory traversal not allowed"), nil
 	}
 
 	var targetFile string
 
 	// Check if this is just a filename (no path separators) - if so, search for it
-	if !strings.Contains(filePath, string(filepath.Separator)) && !strings.Contains(filePath, "/") {
+	if !strings.Contains(filename, string(filepath.Separator)) {
 		// Search for the file by name across all configured directories
-		found, err := findFileByName(filePath)
+		found, err := findFileByName(filename)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("error searching for file: %v", err)), nil
 		}
 		if found == "" {
-			return mcp.NewToolResultError(fmt.Sprintf("file not found: %s", filePath)), nil
+			return mcp.NewToolResultError(fmt.Sprintf("file not found: %s", filename)), nil
 		}
 		targetFile = found
 	} else {
-		// Handle as a full or relative path
-		absPath, err := filepath.Abs(filePath)
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("failed to resolve absolute path: %v", err)), nil
-		}
-
-		// Verify the file is within our configured directories
-		isAllowed := false
-		for _, dir := range config.Directories {
-			absDir, err := filepath.Abs(dir)
-			if err != nil {
-				continue
-			}
-			if strings.HasPrefix(absPath, absDir) {
-				isAllowed = true
-				break
-			}
-		}
-
-		if !isAllowed {
-			return mcp.NewToolResultError(fmt.Sprintf("file is not within configured directories: %s", absPath)), nil
-		}
-
-		targetFile = absPath
+		return mcp.NewToolResultError("filename looks like a path, it should be just the name of file"), nil
 	}
 
 	// Check if file exists and is a markdown file
