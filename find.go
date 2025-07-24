@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -92,6 +93,23 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return mcp.NewToolResultText(string(jsonData)), nil
 }
 
+func shouldIgnoreDir(dirName string) bool {
+	for _, pattern := range config.IgnoreDirs {
+		matched, err := regexp.MatchString(pattern, dirName)
+		if err != nil {
+			// If regex is invalid, log warning and continue
+			if config.DebugLogging {
+				log.Printf("[DEBUG] Invalid regex pattern '%s': %v", pattern, err)
+			}
+			continue
+		}
+		if matched {
+			return true
+		}
+	}
+	return false
+}
+
 func findMarkdownFiles(query string, pageSize int) ([]string, error) {
 	var allMarkdownFiles []string
 
@@ -113,6 +131,14 @@ func findMarkdownFiles(query string, pageSize int) ([]string, error) {
 		err = filepath.WalkDir(absDir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return nil // Skip files that can't be accessed
+			}
+
+			// Skip directories that match ignore patterns
+			if d.IsDir() && shouldIgnoreDir(d.Name()) {
+				if config.DebugLogging {
+					log.Printf("[DEBUG] Ignoring directory: %s", path)
+				}
+				return filepath.SkipDir
 			}
 
 			if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
