@@ -20,7 +20,7 @@ func main() {
 	// Get directories from positional arguments
 	args := flag.Args()
 	if len(args) == 0 {
-		log.Fatal("Markdown directory (or directories) must by provided as command arguments")
+		log.Fatal("Markdown directory (or directories) must be provided as command arguments")
 	} else {
 		config.Directories = args
 	}

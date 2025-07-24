@@ -6,25 +6,26 @@ server is explicitly constrained to read-only to minimise security concerns.
 
 ## Resources
 
-### `markdown://list`
+### `markdown://find_all_files`
 
 Returns a JSON list of all markdown files found in configured directories,
-including file metadata.
+including file metadata (path, name, relativePath) along with directory list and file count.
 
 ## Tools
 
 ### `read_markdown_file`
 
-Read the content of a specific markdown file by providing either:
+Read the content of a specific markdown file by providing just the filename:
 
-- Full or relative file path (e.g., `docs/api.md`, `./guides/setup.md`)
-- Just the filename (e.g., `README.md`, `api`, `setup`) - the server will search all configured directories
+- Filename with extension (e.g., `README.md`, `api.md`)
+- Filename without extension (e.g., `README`, `api`) - `.md` extension will be added automatically
 
-If multiple files with the same name exist, the first match found will be returned.
+The server will search all configured directories and return the first match found.
+Path traversal (e.g., `../`, `docs/api.md`) is not supported for security reasons.
 
 ## Usage
 
-Run the server with directories specified as arguments:
+Run the server with directories specified as arguments (at least one directory is required):
 
 ```bash
 # Scan single directory
@@ -32,7 +33,6 @@ Run the server with directories specified as arguments:
 
 # Scan multiple directories
 ./markdown-reader-mcp /path/to/docs /another/path ./local/docs
-
 ```
 
 ## Build the server
@@ -73,10 +73,10 @@ In Claude code type `/mcp` to verify that the MCP server is registered and to vi
 
 After setup, you can ask Claude Code to:
 
-- "Show me all markdown files in the project"
-- "Read the content of top-10-films"
-- "Read the content of README.md"
-- "Show me the api.md file"
+- "Show me all markdown files in the project" (uses the `markdown://find_all_files` resource)
+- "Read the content of README" (uses `read_markdown_file` tool with filename)
+- "Read the content of README.md" (uses `read_markdown_file` tool with filename)
+- "Show me the api file" (uses `read_markdown_file` tool, searches for `api.md`)
 
 ## Development Setup
 
