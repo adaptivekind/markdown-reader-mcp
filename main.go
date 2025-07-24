@@ -16,6 +16,7 @@ type Config struct {
 	Directories  []string `json:"directories"`
 	MaxPageSize  int      `json:"max_page_size,omitempty"`
 	DebugLogging bool     `json:"debug_logging,omitempty"`
+	IgnoreDirs   []string `json:"ignore_dirs,omitempty"`
 }
 
 var config Config
@@ -73,6 +74,11 @@ func loadConfigFromFile() (*Config, error) {
 		cfg.MaxPageSize = 500
 	}
 
+	// Set default ignore directories if not configured
+	if len(cfg.IgnoreDirs) == 0 {
+		cfg.IgnoreDirs = []string{`\.git$`, `node_modules$`}
+	}
+
 	return &cfg, nil
 }
 
@@ -94,9 +100,12 @@ func main() {
 		config.MaxPageSize = 500
 		// Debug logging is disabled by default for command-line usage
 		config.DebugLogging = false
+		// Set default ignore directories for command-line usage
+		config.IgnoreDirs = []string{`\.git$`, `node_modules$`}
 	}
 
 	log.Printf("Scanning directories: %v", config.Directories)
+	log.Printf("Ignoring directories matching patterns: %v", config.IgnoreDirs)
 
 	if config.DebugLogging {
 		log.Printf("[CONFIG] Debug logging is enabled")

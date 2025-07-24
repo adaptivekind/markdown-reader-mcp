@@ -52,7 +52,8 @@ Create a configuration file at `~/.config/markdown-reader-mcp/markdown-reader-mc
 {
   "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"],
   "max_page_size": 100,
-  "debug_logging": true
+  "debug_logging": true,
+  "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"]
 }
 ```
 
@@ -66,6 +67,7 @@ Then run without arguments:
 - `directories`: Array of directory paths to scan for markdown files
 - `max_page_size` (optional): Maximum number of results that can be returned in a single page. Defaults to 500 if not specified.
 - `debug_logging` (optional): Enable detailed debug logging for each tool call. Defaults to false if not specified.
+- `ignore_dirs` (optional): Array of regex patterns for directory names to ignore during scanning. Defaults to `["\\.git$", "node_modules$"]` if not specified.
 
 **Note:**
 - Command-line arguments take precedence over the configuration file. If both are provided, the command-line arguments will be used.
@@ -159,6 +161,47 @@ When enabled via the `debug_logging` configuration option, the server logs detai
 - Error conditions and security blocks
 
 Debug logs are prefixed with `[DEBUG]` and include timing information to help with performance monitoring. Debug logging is **disabled by default** for performance and to reduce log noise.
+
+## Directory Filtering
+
+The server supports ignoring specific directories during scanning using regex patterns. This is useful for excluding version control directories, dependency folders, and other directories that shouldn't be included in markdown file discovery.
+
+### Default Ignored Directories
+
+By default, the following directories are ignored:
+- `.git` - Git version control directories
+- `node_modules` - Node.js dependency directories
+
+### Custom Ignore Patterns
+
+You can specify custom regex patterns in the configuration file to ignore additional directories:
+
+```json
+{
+  "directories": ["~/projects"],
+  "ignore_dirs": [
+    "\\.git$",           // Ignore .git directories
+    "node_modules$",     // Ignore node_modules directories
+    "vendor$",           // Ignore vendor directories (e.g., Go, PHP)
+    "\\.vscode$",        // Ignore .vscode directories
+    "target$",           // Ignore target directories (e.g., Rust, Java)
+    "dist$",             // Ignore dist/build output directories
+    "coverage$"          // Ignore test coverage directories
+  ]
+}
+```
+
+### Pattern Syntax
+
+- Patterns use Go's `regexp` package syntax
+- Use `$` to match end of directory name (recommended to avoid partial matches)
+- Use `^` to match beginning of directory name
+- Escape special regex characters with backslashes (e.g., `\\.git$` for `.git`)
+- Invalid regex patterns are logged and ignored (if debug logging is enabled)
+
+### Security Note
+
+Directory filtering helps improve performance and prevents accidental exposure of sensitive directories like `.git` that might contain configuration or history information.
 
 ## Development Setup
 

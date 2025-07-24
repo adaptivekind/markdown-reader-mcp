@@ -124,6 +124,14 @@ func findFirstFileByName(filename string) (string, error) {
 				return nil // Skip files that can't be accessed
 			}
 
+			// Skip directories that match ignore patterns
+			if d.IsDir() && shouldIgnoreDir(d.Name()) {
+				if config.DebugLogging {
+					log.Printf("[DEBUG] Ignoring directory: %s", path)
+				}
+				return filepath.SkipDir
+			}
+
 			if !d.IsDir() && strings.EqualFold(d.Name(), filename) {
 				foundFile = path
 				return filepath.SkipAll // Stop searching immediately after finding the first match

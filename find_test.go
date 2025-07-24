@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -70,11 +71,23 @@ func TestFindMarkdownFiles(t *testing.T) {
 			wantCount: 1,
 			wantFiles: []string{"README.md", "bar.md", "baz.md", "cat.md"}, // Any 1 file containing 'a'
 		},
+		{
+			name:      "ignore directories matching regex patterns",
+			dirs:      []string{"test/ignore_test"},
+			query:     "",
+			pageSize:  0,
+			wantCount: 2,
+			wantFiles: []string{"README.md", "main.md"}, // Should ignore .git and node_modules
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config = Config{Directories: tt.dirs, MaxPageSize: 500}
+			config = Config{
+				Directories: tt.dirs,
+				MaxPageSize: 500,
+				IgnoreDirs:  []string{`\.git$`, `node_modules$`}, // Default ignore patterns
+			}
 			defer func() { config = oldConfig }()
 
 			files, err := findMarkdownFiles(tt.query, tt.pageSize)
@@ -116,6 +129,42 @@ func TestFindMarkdownFiles(t *testing.T) {
 						t.Errorf("Expected to find file %s", wantFile)
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestShouldIgnoreDir(t *testing.T) {
+	// Setup test environment
+	oldConfig := config
+	config = Config{
+		Directories:  []string{},
+		MaxPageSize:  500,
+		DebugLogging: false,
+		IgnoreDirs:   []string{`^\.git$`, `^node_modules$`, `^temp.+$`},
+	}
+	defer func() { config = oldConfig }()
+
+	tests := []struct {
+		dirName      string
+		shouldIgnore bool
+	}{
+		{".git", true},
+		{".gitignore", false}, // Should not match because it doesn't exactly match .git
+		{"node_modules", true},
+		{"my_node_modules", false}, // Should not match because it doesn't start with node_modules
+		{"temp", false},            // Should not match because temp.+ requires at least one character after temp
+		{"temp123", true},
+		{"tempdir", true},
+		{"src", false},
+		{"docs", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.dirName, func(t *testing.T) {
+			result := shouldIgnoreDir(tt.dirName)
+			if result != tt.shouldIgnore {
+				t.Errorf("shouldIgnoreDir(%q) = %v, want %v", tt.dirName, result, tt.shouldIgnore)
 			}
 		})
 	}
@@ -270,6 +319,109 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 					if _, exists := fileData[field]; !exists {
 						t.Errorf("Expected field %s in file data", field)
 					}
+				}
+			}
+		})
+	}
+}
+
+func TestHandleFindMarkdownFilesWithIgnoredDirs(t *testing.T) {
+	// Setup test environment with ignore test directory
+	oldConfig := config
+	testDir := "test/ignore_test"
+	config = Config{
+		Directories:  []string{testDir},
+		MaxPageSize:  500,
+		DebugLogging: false,
+		IgnoreDirs:   []string{`\.git$`, `node_modules$`},
+	}
+	defer func() { config = oldConfig }()
+
+	tests := []struct {
+		name      string
+		req       mcp.CallToolRequest
+		wantError bool
+		wantFiles int
+		wantDirs  []string
+	}{
+		{
+			name: "ignore .git and node_modules directories",
+			req: mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Name:      "find_markdown_files",
+					Arguments: map[string]any{},
+				},
+			},
+			wantError: false,
+			wantFiles: 2, // Should only find README.md and src/main.md, ignoring .git/config.md and node_modules/package.md
+			wantDirs:  []string{testDir},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := handleFindMarkdownFiles(context.Background(), tt.req)
+
+			if tt.wantError && err == nil {
+				t.Error("Expected error but got none")
+				return
+			}
+			if !tt.wantError && err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if tt.wantError {
+				return
+			}
+
+			if result == nil {
+				t.Error("Expected tool result, got nil")
+				return
+			}
+
+			if result.IsError {
+				t.Errorf("Tool returned error: %v", result.Content)
+				return
+			}
+
+			if len(result.Content) == 0 {
+				t.Error("Expected content in tool result")
+				return
+			}
+
+			textContent, ok := result.Content[0].(mcp.TextContent)
+			if !ok {
+				t.Errorf("Expected TextContent, got %T", result.Content[0])
+				return
+			}
+
+			text := textContent.Text
+
+			// Parse JSON response
+			var listData map[string]any
+			if err := json.Unmarshal([]byte(text), &listData); err != nil {
+				t.Fatalf("Failed to parse JSON response: %v", err)
+			}
+
+			// Check files count
+			files, ok := listData["files"].([]any)
+			if !ok {
+				t.Error("Expected files array in response")
+				return
+			}
+
+			if len(files) != tt.wantFiles {
+				t.Errorf("Expected %d files, got %d", tt.wantFiles, len(files))
+			}
+
+			// Verify that ignored directories' files are not included
+			for _, file := range files {
+				fileData := file.(map[string]any)
+				path := fileData["path"].(string)
+
+				// Ensure no files from .git or node_modules directories are included
+				if strings.Contains(path, "/.git/") || strings.Contains(path, "/node_modules/") {
+					t.Errorf("Found file from ignored directory: %s", path)
 				}
 			}
 		})
