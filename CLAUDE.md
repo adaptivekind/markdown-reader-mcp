@@ -26,7 +26,7 @@ go test -v -run TestServerInitialization
 **Server Setup (`main.go`)**
 
 - Uses `github.com/mark3labs/mcp-go` library for MCP protocol implementation
-- Requires directory paths as positional command-line arguments (no default)
+- Supports directory paths as positional command-line arguments or configuration file
 - Registers one resource and one tool with the MCP server
 - Communicates via stdio using JSON-RPC 2.0
 
@@ -35,6 +35,7 @@ go test -v -run TestServerInitialization
 - `main.go`: Server setup, configuration, and MCP server initialization
 - `find.go`: File discovery functionality (`findAllMarkdownFiles`, `handleFindAllMarkdownFiles`)
 - `read_handler.go`: File reading functionality (`handleReadMarkdownFile`, `findFirstFileByName`)
+- `config_test.go`: Tests for configuration file loading functionality
 
 **Key Functions:**
 
@@ -42,6 +43,7 @@ go test -v -run TestServerInitialization
 - `handleFindAllMarkdownFiles()` (`find.go`): Resource handler returning JSON list of all markdown files with metadata
 - `handleReadMarkdownFile()` (`read_handler.go`): Tool handler for reading individual file contents by filename only
 - `findFirstFileByName()` (`read_handler.go`): Helper function that searches for files by name across all configured directories and returns the first match found
+- `loadConfigFromFile()` (`main.go`): Loads configuration from `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`
 
 **Security Model:**
 
@@ -75,6 +77,7 @@ go test -v -run TestServerInitialization
 
 - `find_test.go`: Tests for file discovery functionality (`TestFindAllMarkdownFiles`, `TestHandleFindAllMarkdown`)
 - `read_handler_test.go`: Tests for file reading functionality (`TestHandleReadMarkdownFile`, `TestFindFirstFileByName`)
+- `config_test.go`: Tests for configuration file loading (`TestLoadConfigFromFile`, error cases)
 - Isolated testing with temporary directories and mock data
 - Comprehensive error handling and edge case coverage
 
@@ -85,12 +88,28 @@ go test -v -run TestServerInitialization
 
 ## Usage Patterns
 
-The server runs as a command-line tool requiring directory arguments:
+The server can be configured in two ways:
 
+### Command-line Arguments
 ```bash
 ./markdown-reader-mcp docs guides .     # Scan multiple directories
 ./markdown-reader-mcp /path/to/docs     # Scan specific directory
 ```
+
+### Configuration File
+Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
+```json
+{
+  "directories": ["~/Documents/notes", "~/projects/docs", "."]
+}
+```
+
+Then run without arguments:
+```bash
+./markdown-reader-mcp                   # Uses config file
+```
+
+Command-line arguments take precedence over the configuration file. Tilde (`~`) in directory paths is automatically expanded to the home directory.
 
 Designed to integrate with Claude Code via MCP configuration in `CLAUDE.md`:
 
