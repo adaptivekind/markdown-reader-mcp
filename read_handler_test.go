@@ -9,7 +9,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-func TestFindFileByName(t *testing.T) {
+func TestFindFirstFileByName(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
 	tempDir := "test/dir1"
@@ -46,7 +46,7 @@ func TestFindFileByName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := findFileByName(tt.filename)
+			result, err := findFirstFileByName(tt.filename)
 
 			if tt.wantError && err == nil {
 				t.Error("Expected error but got none")

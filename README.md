@@ -27,14 +27,12 @@ If multiple files with the same name exist, the first match found will be return
 Run the server with directories specified as arguments:
 
 ```bash
-# Scan current directory only (default)
-./markdown-reader-mcp
+# Scan single directory
+./markdown-reader-mcp ./my-path
 
 # Scan multiple directories
 ./markdown-reader-mcp /path/to/docs /another/path ./local/docs
 
-# Scan current directory and test_data
-./markdown-reader-mcp . ./test_data
 ```
 
 ## Build the server
@@ -52,7 +50,7 @@ To use this MCP server with Claude Code, you need to configure it in your MCP se
 Add the server to your Claude Code MCP configuration using one of these methods:
 
 ```bash
-claude mcp add markdown-reader -- ./markdown-reader-mcp docs guides .
+claude mcp add markdown-reader -- ./markdown-reader-mcp ~/my-markdown-directory
 ```
 
 ### Available Capabilities
@@ -61,7 +59,7 @@ Once configured, Claude Code will have access to:
 
 **Resources:**
 
-- `markdown://list` - Get a JSON list of all markdown files with metadata
+- `markdown://find_all_files` - Get a JSON list of all markdown files
 
 **Tools:**
 
@@ -76,36 +74,21 @@ In Claude code type `/mcp` to verify that the MCP server is registered and to vi
 After setup, you can ask Claude Code to:
 
 - "Show me all markdown files in the project"
-- "Read the content of docs/api.md"
-- "Read the content of README.md" (searches all directories)
-- "Show me the api.md file" (finds api.md anywhere in configured directories)
+- "Read the content of top-10-films"
+- "Read the content of README.md"
+- "Show me the api.md file"
 
 ## Development Setup
 
 1. Clone the repository
 2. Install pre-commit framework:
-   ```bash
-   pip install pre-commit
-   ```
-
-````
-
-3. Install the pre-commit hooks:
-   ```bash
-   pre-commit install
-   ```
-
-The pre-commit hooks will automatically run before each commit and include:
-
-- `go fmt` - Code formatting
-- `go vet` - Static analysis
-- `go mod tidy` - Clean up module dependencies
-- `go test` - All tests must pass
-- General checks for trailing whitespace, large files, etc.
-
-## Building
 
 ```bash
-go build -o markdown-reader-mcp .
+pip install pre-commit
 ```
-````
+
+3. Install the pre-commit hooks:
+
+```bash
+pre-commit install
+```

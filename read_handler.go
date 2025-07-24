@@ -28,7 +28,7 @@ func handleReadMarkdownFile(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	// Check if this is just a filename (no path separators) - if so, search for it
 	if !strings.Contains(filename, string(filepath.Separator)) {
 		// Search for the file by name across all configured directories
-		found, err := findFileByName(filename)
+		found, err := findFirstFileByName(filename)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("error searching for file: %v", err)), nil
 		}
@@ -54,14 +54,13 @@ func handleReadMarkdownFile(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	return mcp.NewToolResultText(string(content)), nil
 }
 
-// findFileByName searches for a markdown file by name across all configured directories
-func findFileByName(filename string) (string, error) {
+// findFirstFileByName searches for a markdown file by name across all configured directories
+// and returns the first match found
+func findFirstFileByName(filename string) (string, error) {
 	// Ensure the filename has .md extension if not provided
 	if !strings.HasSuffix(strings.ToLower(filename), ".md") {
 		filename = filename + ".md"
 	}
-
-	var matches []string
 
 	for _, dir := range config.Directories {
 		absDir, err := filepath.Abs(dir)
@@ -76,33 +75,29 @@ func findFileByName(filename string) (string, error) {
 			continue
 		}
 
+		var foundFile string
 		err = filepath.WalkDir(absDir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return nil // Skip files that can't be accessed
 			}
 
 			if !d.IsDir() && strings.EqualFold(d.Name(), filename) {
-				matches = append(matches, path)
+				foundFile = path
+				return filepath.SkipAll // Stop searching immediately after finding the first match
 			}
 
 			return nil
 		})
+
 		if err != nil {
 			log.Printf("Warning: Error walking directory %s: %v", absDir, err)
 		}
-	}
 
-	if len(matches) == 0 {
-		return "", fmt.Errorf("file not found: %s", filename)
-	}
-
-	if len(matches) > 1 {
-		// Return the first match but log a warning about multiple matches
-		log.Printf("Warning: Multiple files found with name %s, using first match: %s", filename, matches[0])
-		for i, match := range matches {
-			log.Printf("  Match %d: %s", i+1, match)
+		// Return immediately if we found a file in this directory
+		if foundFile != "" {
+			return foundFile, nil
 		}
 	}
 
-	return matches[0], nil
+	return "", fmt.Errorf("file not found: %s", filename)
 }

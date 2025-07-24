@@ -23,38 +23,44 @@ go test -v -run TestServerInitialization
 
 ### Core Components
 
-**Server Setup (`main.go:24-74`)**
+**Server Setup (`main.go`)**
 
 - Uses `github.com/mark3labs/mcp-go` library for MCP protocol implementation
-- Accepts directory paths as positional command-line arguments (defaults to current directory)
-- Registers one resource and three tools with the MCP server
+- Requires directory paths as positional command-line arguments (no default)
+- Registers one resource and one tool with the MCP server
 - Communicates via stdio using JSON-RPC 2.0
+
+**File Organization:**
+
+- `main.go`: Server setup, configuration, and MCP server initialization
+- `find.go`: File discovery functionality (`findAllMarkdownFiles`, `handleFindAllMarkdownFiles`)
+- `read_handler.go`: File reading functionality (`handleReadMarkdownFile`, `findFirstFileByName`)
 
 **Key Functions:**
 
-- `findMarkdownFiles()`: Recursively discovers `.md` files in configured directories
-- `handleMarkdownList()`: Resource handler returning JSON list of all markdown files with metadata
-- `handleReadMarkdownFile()`: Tool handler for reading individual file contents (supports path or filename search)
-- `findFileByName()`: Helper function that searches for files by name across all configured directories
+- `findAllMarkdownFiles()` (`find.go`): Recursively discovers `.md` files in configured directories
+- `handleFindAllMarkdownFiles()` (`find.go`): Resource handler returning JSON list of all markdown files with metadata
+- `handleReadMarkdownFile()` (`read_handler.go`): Tool handler for reading individual file contents by filename only
+- `findFirstFileByName()` (`read_handler.go`): Helper function that searches for files by name across all configured directories and returns the first match found
 
 **Security Model:**
 
 - Path validation prevents directory traversal attacks (`..` sequences blocked)
 - File access restricted to configured directories only
 - Only `.md` files are discovered and accessible
+- Only filename-based search (no path traversal through tool interface)
 - All file paths converted to absolute paths for validation
 
 ### MCP Interface
 
-**Resource:** `markdown://list`
+**Resource:** `markdown://find_all_files`
 
-- Returns JSON array of discovered markdown files with metadata (path, name, size, modified time)
+- Returns JSON array of discovered markdown files with metadata (path, name, relativePath)
+- Includes directory list and file count
 
 **Tools:**
 
-- `read_markdown_file`: Read content of specific file by full path, relative path, or just filename (searches all directories)
-- `search_markdown`: Search text within markdown files (with optional directory filtering)
-- `list_directories`: List configured scan directories
+- `read_markdown_file`: Read content of specific file by filename only (e.g., 'README' or 'README.md')
 
 ### Testing Architecture
 
@@ -62,8 +68,15 @@ go test -v -run TestServerInitialization
 
 - `MCPTestClient`: Custom test client that spawns server process and communicates via stdio
 - Tests full MCP protocol handshake, resource/tool operations, and error handling
-- Uses `test_data/` directory with sample markdown files for realistic testing
+- Uses `test/dir1/` and `test/dir2/` directories with sample markdown files for realistic testing
 - Includes timeout handling and proper process cleanup
+
+**Unit Testing:**
+
+- `find_test.go`: Tests for file discovery functionality (`TestFindAllMarkdownFiles`, `TestHandleFindAllMarkdown`)
+- `read_handler_test.go`: Tests for file reading functionality (`TestHandleReadMarkdownFile`, `TestFindFirstFileByName`)
+- Isolated testing with temporary directories and mock data
+- Comprehensive error handling and edge case coverage
 
 ## Key Dependencies
 
@@ -72,11 +85,11 @@ go test -v -run TestServerInitialization
 
 ## Usage Patterns
 
-The server runs as a command-line tool accepting directory arguments:
+The server runs as a command-line tool requiring directory arguments:
 
 ```bash
-./markdown-reader-mcp                    # Scan current directory
 ./markdown-reader-mcp docs guides .     # Scan multiple directories
+./markdown-reader-mcp /path/to/docs     # Scan specific directory
 ```
 
 Designed to integrate with Claude Code via MCP configuration in `CLAUDE.md`:
