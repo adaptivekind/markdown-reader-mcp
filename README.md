@@ -27,7 +27,7 @@ Path traversal (e.g., `../`, `docs/api.md`) is not supported for security reason
 
 Run the server with directories specified as arguments (at least one directory is required):
 
-```bash
+```sh
 # Scan single directory
 ./markdown-reader-mcp ./my-path
 
@@ -37,8 +37,14 @@ Run the server with directories specified as arguments (at least one directory i
 
 ## Build the server
 
-```bash
+```sh
 go build
+```
+
+## Install
+
+```sh
+go install
 ```
 
 ## Integration with Claude Code
@@ -49,8 +55,26 @@ To use this MCP server with Claude Code, you need to configure it in your MCP se
 
 Add the server to your Claude Code MCP configuration using one of these methods:
 
-```bash
-claude mcp add markdown-reader -- ./markdown-reader-mcp ~/my-markdown-directory
+```sh
+claude mcp add markdown-reader -- markdown-reader-mcp ~/my-markdown-directory
+```
+
+Add server for all your projects on this machine
+
+```sh
+claude mcp add markdown-reader -s user -- markdown-reader-mcp ~/my-markdown-directory
+```
+
+List MCP servers installed
+
+```sh
+claude mcp list
+```
+
+Remove MCP server
+
+```sh
+claude mcp remove markdown-reader
 ```
 
 ### Available Capabilities
@@ -83,12 +107,12 @@ After setup, you can ask Claude Code to:
 1. Clone the repository
 2. Install pre-commit framework:
 
-```bash
+```sh
 pip install pre-commit
 ```
 
 3. Install the pre-commit hooks:
 
-```bash
+```sh
 pre-commit install
 ```
