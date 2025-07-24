@@ -11,7 +11,9 @@
       "Bash(go test:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:pkg.go.dev)",
-      "Bash(./markdown-reader-mcp:*)"
+      "Bash(./markdown-reader-mcp:*)",
+      "mcp__markdown-reader__find_markdown_files",
+      "mcp__markdown-reader__read_markdown_file"
     ],
     "deny": []
   }

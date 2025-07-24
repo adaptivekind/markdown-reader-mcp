@@ -3,7 +3,7 @@
 A Model Context Protocol (MCP) server built in Go with **READ-ONLY** access to
 markdown documents from configured local directories. The scope of this MCP
 server is explicitly constrained to read-only access, and restricted to only
-being able to access files that have the **.md**. This explicit constraint helps
+being able to access files that have the **.md** extension. This explicit constraint helps
 with peace of mind.
 
 ## TL;DR
@@ -23,15 +23,20 @@ with peace of mind.
 - 📖 **Read markdown files** by filename across multiple directories
 - 🚫 **Ignores directories** like `.git`, `node_modules` by default
 
-## Use Case : Master prompt
+## Use Case: Master Prompt
 
 A primary use case of this is the provisioning of a controlled personal
 collection of prompts and context that can be applied for all local agents. For
 example, this can be achieved by providing a master prompt in a file called
-`my-tone-of-voice.md` and then referencing this by prompting. "Please use
-my-tone-of-voice.md at all times." The agent will discover your master prompt
-and use going forward. This `my-tone-of-voice.md` prompt can reference other
-prompts, for example, by including:
+`my-tone-of-voice.md` and then referencing this by prompting.
+
+```txt
+Please use my-tone-of-voice.md from Markdown Reader MCP at all times
+```
+
+The agent will discover your master prompt and use it going forward. This
+`my-tone-of-voice.md` prompt can reference other prompts, for example, by
+including:
 
 ```markdown
 - You MUST follow guidance in `my-universal-guidance.md`
@@ -57,7 +62,7 @@ And storing universal guidance in `my-universal-guidance.md`
   in the markdown files from the Markdown Reader MCP.
 ```
 
-This in turn then can discover any notes (in your markdown directories) about
+This approach can then discover any notes (in your markdown directories) about
 yourself as needed.
 
 ## Installation & Setup
