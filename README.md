@@ -1,10 +1,8 @@
 # Markdown Reader MCP Server
 
-A Model Context Protocol (MCP) server built in Go with **READ-ONLY** access to
-markdown documents from configured local directories. The scope of this MCP
-server is explicitly constrained to read-only access, and restricted to only
-being able to access files that have the **.md** extension. This explicit constraint helps
-with peace of mind.
+A Model Context Protocol (MCP) server finds and reads Markdown files in
+configured directories. This server guarantees **READ-ONLY** access to **ONLY
+MARKDOWN** documents, i.e. files ending with **.md** extension.
 
 ## TL;DR
 
@@ -124,9 +122,9 @@ claude mcp remove markdown-reader
 
 Add to your Claude Desktop MCP settings file:
 
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-**Linux:** `~/.config/claude-desktop/claude_desktop_config.json`
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/claude-desktop/claude_desktop_config.json`
 
 ```json
 {
