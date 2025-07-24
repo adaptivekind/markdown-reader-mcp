@@ -15,13 +15,12 @@ type Config struct {
 var config Config
 
 func main() {
-	// Parse command line arguments
 	flag.Parse()
 
-	// Get directories from positional arguments, default to current directory
+	// Get directories from positional arguments
 	args := flag.Args()
 	if len(args) == 0 {
-		config.Directories = []string{"."}
+		log.Fatal("Markdown directory (or directories) must by provided as command arguments")
 	} else {
 		config.Directories = args
 	}
@@ -39,21 +38,21 @@ func main() {
 	// Add resource for listing markdown files
 	s.AddResource(
 		mcp.NewResource(
-			"markdown://list",
-			"List Markdown Files",
-			mcp.WithResourceDescription("List of all markdown files in configured directories"),
+			"markdown://find_all",
+			"Find all Markdown Files",
+			mcp.WithResourceDescription("Find all known markdown files"),
 			mcp.WithMIMEType("application/json"),
 		),
-		handleMarkdownList,
+		handleFindMarkdown,
 	)
 
 	// Add tool for reading individual markdown files
 	s.AddTool(
 		mcp.NewTool("read_markdown_file",
-			mcp.WithDescription("Read the content of a specific markdown file by path or filename"),
-			mcp.WithString("file_path",
+			mcp.WithDescription("Read the contents of a specific markdown file by name"),
+			mcp.WithString("name",
 				mcp.Required(),
-				mcp.Description("Path to the markdown file or just the filename (e.g., 'README.md' or 'docs/api.md')"),
+				mcp.Description("Name of the markdown file (e.g., 'README' or 'README.md')"),
 			),
 		),
 		handleReadMarkdownFile,

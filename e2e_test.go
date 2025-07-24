@@ -85,7 +85,7 @@ func (c *MCPTestClient) Close() error {
 }
 
 // SendRequest sends a JSON-RPC request and returns the response
-func (c *MCPTestClient) SendRequest(request interface{}) (map[string]interface{}, error) {
+func (c *MCPTestClient) SendRequest(request any) (map[string]any, error) {
 	// Serialize request
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
@@ -113,7 +113,7 @@ func (c *MCPTestClient) SendRequest(request interface{}) (map[string]interface{}
 	select {
 	case response := <-responseChan:
 		// Parse JSON response
-		var result map[string]interface{}
+		var result map[string]any
 		if err := json.Unmarshal([]byte(response), &result); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 		}
@@ -126,18 +126,18 @@ func (c *MCPTestClient) SendRequest(request interface{}) (map[string]interface{}
 }
 
 // Test helper functions
-func createInitializeRequest(id int) map[string]interface{} {
+func createInitializeRequest(id int) map[string]any {
 	return map[string]interface{}{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  "initialize",
 		"params": map[string]interface{}{
 			"protocolVersion": "2024-11-05",
-			"capabilities": map[string]interface{}{
-				"resources": map[string]interface{}{},
-				"tools":     map[string]interface{}{},
+			"capabilities": map[string]any{
+				"resources": map[string]any{},
+				"tools":     map[string]any{},
 			},
-			"clientInfo": map[string]interface{}{
+			"clientInfo": map[string]any{
 				"name":    "test-client",
 				"version": "1.0.0",
 			},
@@ -207,13 +207,13 @@ func TestServerInitialization(t *testing.T) {
 		t.Errorf("Expected id 1, got %v", response["id"])
 	}
 
-	result, ok := response["result"].(map[string]interface{})
+	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object, got %T", response["result"])
 	}
 
 	// Check server info
-	serverInfo, ok := result["serverInfo"].(map[string]interface{})
+	serverInfo, ok := result["serverInfo"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected serverInfo object")
 	}
@@ -223,7 +223,7 @@ func TestServerInitialization(t *testing.T) {
 	}
 
 	// Check capabilities
-	capabilities, ok := result["capabilities"].(map[string]interface{})
+	capabilities, ok := result["capabilities"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected capabilities object")
 	}
@@ -253,23 +253,23 @@ func TestResourcesList(t *testing.T) {
 		t.Fatalf("Failed to list resources: %v", err)
 	}
 
-	result, ok := response["result"].(map[string]interface{})
+	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object")
 	}
 
-	resources, ok := result["resources"].([]interface{})
+	resources, ok := result["resources"].([]any)
 	if !ok {
 		t.Fatalf("Expected resources array")
 	}
 
 	// Verify we have the expected resources
 	expectedResources := map[string]bool{
-		"markdown://list": false,
+		"markdown://find_all": false,
 	}
 
 	for _, resource := range resources {
-		res := resource.(map[string]interface{})
+		res := resource.(map[string]any)
 		uri := res["uri"].(string)
 		if _, exists := expectedResources[uri]; exists {
 			expectedResources[uri] = true
@@ -294,22 +294,22 @@ func TestMarkdownFilesList(t *testing.T) {
 	}
 
 	// Read markdown list resource
-	response, err := client.SendRequest(createResourceReadRequest(2, "markdown://list"))
+	response, err := client.SendRequest(createResourceReadRequest(2, "markdown://find_all"))
 	if err != nil {
 		t.Fatalf("Failed to read markdown list: %v", err)
 	}
 
-	result, ok := response["result"].(map[string]interface{})
+	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object")
 	}
 
-	contents, ok := result["contents"].([]interface{})
+	contents, ok := result["contents"].([]any)
 	if !ok || len(contents) == 0 {
 		t.Fatalf("Expected contents array")
 	}
 
-	content := contents[0].(map[string]interface{})
+	content := contents[0].(map[string]any)
 	text := content["text"].(string)
 
 	// Parse the JSON response
@@ -319,7 +319,7 @@ func TestMarkdownFilesList(t *testing.T) {
 	}
 
 	// Verify structure
-	files, ok := listData["files"].([]interface{})
+	files, ok := listData["files"].([]any)
 	if !ok {
 		t.Fatalf("Expected files array")
 	}
