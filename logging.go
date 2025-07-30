@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -112,4 +114,50 @@ func (h *prettyHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	_, err := h.writer.Write([]byte(sb.String()))
 	return err
+}
+
+func configureLogger() {
+	logLevel := slog.LevelInfo // Default to info, warnings and errors
+
+	// Determine debug logging setting with command line flags taking precedence
+	debugLogging := config.DebugLogging
+	if *debugFlag {
+		debugLogging = true // Command line --debug overrides config
+	} else if *quietFlag {
+		debugLogging = false // Command line --quiet overrides config
+	}
+
+	if debugLogging {
+		logLevel = slog.LevelDebug // Show debug messages when enabled
+	}
+
+	// Determine log output destination
+	var logOutput *os.File
+
+	if config.LogFile != "" {
+		// Expand tilde in log file path
+		logPath, err := expandTilde(config.LogFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Could not expand log file path %s: %v\n", config.LogFile, err)
+			logOutput = os.Stderr
+		} else {
+			// Create directory if it doesn't exist
+			logDir := filepath.Dir(logPath)
+			if err := os.MkdirAll(logDir, 0755); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: Could not create log directory %s: %v\n", logDir, err)
+				logOutput = os.Stderr
+			} else {
+				// Open log file for writing (create or append)
+				logOutput, err = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: Could not open log file %s: %v\n", logPath, err)
+					logOutput = os.Stderr
+				}
+			}
+		}
+	} else {
+		logOutput = os.Stderr
+	}
+
+	logger = slog.New(newPrettyHandler(logOutput, &slog.HandlerOptions{Level: logLevel}))
 }
