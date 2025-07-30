@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,6 +15,12 @@ import (
 func TestFindMarkdownFiles(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
+	oldLogger := logger
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
+	defer func() {
+		config = oldConfig
+		logger = oldLogger
+	}()
 	markdownDir := "test/dir1"
 
 	tests := []struct {
@@ -88,7 +96,6 @@ func TestFindMarkdownFiles(t *testing.T) {
 				MaxPageSize: DefaultMaxPageSize,
 				IgnoreDirs:  []string{`\.git$`, `node_modules$`}, // Default ignore patterns
 			}
-			defer func() { config = oldConfig }()
 
 			files, err := findMarkdownFiles(tt.query, tt.pageSize)
 			if err != nil {
@@ -173,11 +180,16 @@ func TestShouldIgnoreDir(t *testing.T) {
 func TestHandleFindAllMarkdown(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
+	oldLogger := logger
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 	testDir := "test/dir1"
 
 	// Set config to test directory
 	config = Config{Directories: []string{testDir}, MaxPageSize: DefaultMaxPageSize}
-	defer func() { config = oldConfig }()
+	defer func() {
+		config = oldConfig
+		logger = oldLogger
+	}()
 
 	tests := []struct {
 		name      string
@@ -328,6 +340,8 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 func TestHandleFindMarkdownFilesWithIgnoredDirs(t *testing.T) {
 	// Setup test environment with ignore test directory
 	oldConfig := config
+	oldLogger := logger
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 	testDir := "test/ignore_test"
 	config = Config{
 		Directories:  []string{testDir},
@@ -335,7 +349,10 @@ func TestHandleFindMarkdownFilesWithIgnoredDirs(t *testing.T) {
 		DebugLogging: false,
 		IgnoreDirs:   []string{`\.git$`, `node_modules$`},
 	}
-	defer func() { config = oldConfig }()
+	defer func() {
+		config = oldConfig
+		logger = oldLogger
+	}()
 
 	tests := []struct {
 		name      string

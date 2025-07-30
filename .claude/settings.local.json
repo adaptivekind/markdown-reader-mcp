@@ -13,7 +13,12 @@
       "WebFetch(domain:pkg.go.dev)",
       "Bash(./markdown-reader-mcp:*)",
       "mcp__markdown-reader__find_markdown_files",
-      "mcp__markdown-reader__read_markdown_file"
+      "mcp__markdown-reader__read_markdown_file",
+      "Bash(rm:*)",
+      "Bash(timeout:*)",
+      "Bash(cp:*)",
+      "Bash(go doc:*)",
+      "Bash(PORT=8081 timeout 3s ./markdown-reader-mcp -sse .)"
     ],
     "deny": []
   }

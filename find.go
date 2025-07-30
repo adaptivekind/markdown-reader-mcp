@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -28,14 +27,14 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	pageSize := extractPageSizeParam(req.Params.Arguments)
 
 	if config.DebugLogging {
-		log.Printf("[DEBUG] find_markdown_files called with query='%s', page_size=%d", query, pageSize)
+		logger.Debug("find_markdown_files called", "query", query, "page_size", pageSize)
 	}
 
 	files, err := findMarkdownFiles(query, pageSize)
 	if err != nil {
 		if config.DebugLogging {
 			duration := time.Since(startTime)
-			log.Printf("[DEBUG] find_markdown_files failed after %v: %v", duration, err)
+			logger.Debug("find_markdown_files failed", "duration", duration, "error", err)
 		}
 		return mcp.NewToolResultError(fmt.Sprintf("failed to find markdown files: %v", err)), nil
 	}
@@ -60,14 +59,14 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	if err != nil {
 		if config.DebugLogging {
 			duration := time.Since(startTime)
-			log.Printf("[DEBUG] find_markdown_files failed to marshal JSON after %v: %v", duration, err)
+			logger.Debug("find_markdown_files failed to marshal JSON", "duration", duration, "error", err)
 		}
 		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal file list: %v", err)), nil
 	}
 
 	if config.DebugLogging {
 		duration := time.Since(startTime)
-		log.Printf("[DEBUG] find_markdown_files completed successfully in %v, found %d files", duration, len(files))
+		logger.Debug("find_markdown_files completed successfully", "duration", duration, "files_found", len(files))
 	}
 
 	return mcp.NewToolResultText(string(jsonData)), nil
@@ -78,7 +77,7 @@ func shouldIgnoreDir(dirName string) bool {
 		matched, err := regexp.MatchString(pattern, dirName)
 		if err != nil {
 			if config.DebugLogging {
-				log.Printf("[DEBUG] Invalid regex pattern '%s': %v", pattern, err)
+				logger.Debug("Invalid regex pattern", "pattern", pattern, "error", err)
 			}
 			continue
 		}
@@ -172,12 +171,12 @@ func extractPageSizeParam(arguments any) int {
 func collectMarkdownFilesFromDir(dir string) []string {
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
-		log.Printf("Warning: Could not resolve absolute path for %s: %v", dir, err)
+		logger.Warn("Could not resolve absolute path", "directory", dir, "error", err)
 		return nil
 	}
 
 	if _, err := os.Stat(absDir); os.IsNotExist(err) {
-		log.Printf("Warning: Directory does not exist: %s", absDir)
+		logger.Warn("Directory does not exist", "directory", absDir)
 		return nil
 	}
 
@@ -189,7 +188,7 @@ func collectMarkdownFilesFromDir(dir string) []string {
 
 		if d.IsDir() && shouldIgnoreDir(d.Name()) {
 			if config.DebugLogging {
-				log.Printf("[DEBUG] Ignoring directory: %s", path)
+				logger.Debug("Ignoring directory", "path", path)
 			}
 			return filepath.SkipDir
 		}
@@ -201,7 +200,7 @@ func collectMarkdownFilesFromDir(dir string) []string {
 		return nil
 	})
 	if err != nil {
-		log.Printf("Warning: Error walking directory %s: %v", absDir, err)
+		logger.Warn("Error walking directory", "directory", absDir, "error", err)
 	}
 
 	return files

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,10 +13,15 @@ import (
 func TestFindFirstFileByName(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
+	oldLogger := logger
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 	tempDir := "test/dir1"
 
 	config = Config{Directories: []string{tempDir}}
-	defer func() { config = oldConfig }()
+	defer func() {
+		config = oldConfig
+		logger = oldLogger
+	}()
 
 	tests := []struct {
 		name           string
@@ -82,11 +88,16 @@ func TestFindFirstFileByName(t *testing.T) {
 func TestHandleReadMarkdownFile(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
+	oldLogger := logger
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 	testDir := "test/dir1"
 
 	// Set config to test directory
 	config = Config{Directories: []string{testDir}}
-	defer func() { config = oldConfig }()
+	defer func() {
+		config = oldConfig
+		logger = oldLogger
+	}()
 
 	tests := []struct {
 		name        string
