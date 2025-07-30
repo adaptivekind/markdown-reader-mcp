@@ -17,11 +17,12 @@ func TestConfigWithMaxPageSize(t *testing.T) {
 
 	configPath := filepath.Join(configDir, "markdown-reader-mcp.json")
 
-	// Test config data with max_page_size
+	// Test config data with max_page_size and log_file
 	testConfig := Config{
 		Directories:  []string{"docs", "guides"},
 		MaxPageSize:  100,
 		DebugLogging: true,
+		LogFile:      "~/test/logs/server.log",
 	}
 
 	configData, err := json.Marshal(testConfig)
@@ -50,6 +51,10 @@ func TestConfigWithMaxPageSize(t *testing.T) {
 
 	if !cfg.DebugLogging {
 		t.Errorf("Expected DebugLogging true, got %v", cfg.DebugLogging)
+	}
+
+	if cfg.LogFile != "~/test/logs/server.log" {
+		t.Errorf("Expected LogFile '~/test/logs/server.log', got %s", cfg.LogFile)
 	}
 }
 
@@ -191,6 +196,80 @@ func TestDebugLoggingConfiguration(t *testing.T) {
 			// but we can verify the config is being respected and function works
 			if len(files) < 0 { // This will never be true, but ensures files is used
 				t.Error("Unexpected negative file count")
+			}
+		})
+	}
+}
+
+func TestLogFileConfiguration(t *testing.T) {
+	// Create a temporary directory for home
+	tempDir, err := os.MkdirTemp("", "mcp-test-home")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create config directory structure
+	configDir := filepath.Join(tempDir, ".config", "markdown-reader-mcp")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		t.Fatalf("Failed to create config dir: %v", err)
+	}
+
+	configPath := filepath.Join(configDir, "markdown-reader-mcp.json")
+
+	tests := []struct {
+		name     string
+		logFile  string
+		expected string
+	}{
+		{
+			name:     "absolute path log file",
+			logFile:  "/var/log/markdown-reader-mcp.log",
+			expected: "/var/log/markdown-reader-mcp.log",
+		},
+		{
+			name:     "tilde path log file",
+			logFile:  "~/logs/server.log",
+			expected: "~/logs/server.log",
+		},
+		{
+			name:     "empty log file",
+			logFile:  "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test config with log file
+			testConfig := Config{
+				Directories: []string{"test"},
+				LogFile:     tt.logFile,
+			}
+
+			configData, err := json.Marshal(testConfig)
+			if err != nil {
+				t.Fatalf("Failed to marshal test config: %v", err)
+			}
+
+			err = os.WriteFile(configPath, configData, 0644)
+			if err != nil {
+				t.Fatalf("Failed to write config file: %v", err)
+			}
+
+			// Mock the home directory for testing
+			originalHome := os.Getenv("HOME")
+			defer os.Setenv("HOME", originalHome)
+			os.Setenv("HOME", tempDir)
+
+			// Load config
+			cfg, err := loadConfigFromFile()
+			if err != nil {
+				t.Fatalf("Failed to load config: %v", err)
+			}
+
+			if cfg.LogFile != tt.expected {
+				t.Errorf("Expected LogFile '%s', got '%s'", tt.expected, cfg.LogFile)
 			}
 		})
 	}

@@ -56,7 +56,8 @@ Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
   "directories": ["~/my/notes", "~/projects/docs", "/absolute/path"],
   "max_page_size": 100,
   "debug_logging": false,
-  "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"]
+  "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"],
+  "log_file": "~/local/logs/markdown-reader-mcp.log"
 }
 ```
 
@@ -94,6 +95,18 @@ and registered with
 
 ```sh
 claude mcp add --transport sse markdown-reader http://localhost:8080/sse
+```
+
+## Run as service in Mac OS with Launchd
+
+The server can be loaded with Launchd on Mac OS
+
+```sh
+go install
+cp com.adaptivekind.markdown-reader-mcp.plist ~/Library/LaunchAgents
+defaults write ~/Library/LaunchAgents/com.adaptivekind.markdown-reader-mcp.plist \
+   ProgramArguments -array $HOME/go/bin/markdown-reader-mcp -sse
+launchctl load ~/Library/LaunchAgents/com.adaptivekind.markdown-reader-mcp.plist
 ```
 
 #### Claude Desktop App
@@ -149,6 +162,7 @@ Once configured, you can ask Claude:
 - **`debug_logging`** (optional): Enable detailed debug logging. Default: false
 - **`ignore_dirs`** (optional): Regex patterns for directories to ignore.
   Default: `["\\.git$", "node_modules$"]`
+- **`log_file`** (optional): Path to log file. Default: stderr. Supports tilde expansion.
 
 ### Directory Filtering
 
