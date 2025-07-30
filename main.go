@@ -184,8 +184,25 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Show debug logging status and source
+	debugLogging := config.DebugLogging
+	source := "config"
+	if *debugFlag {
+		debugLogging = true
+		source = "command line"
+	} else if *quietFlag {
+		debugLogging = false
+		source = "command line"
+	}
+
+	logLevel := slog.LevelWarn
+	if debugLogging {
+		logLevel = slog.LevelDebug
+	}
+
 	// Initialize basic logger for startup (will be reconfigured after loading config)
-	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}))
+	logger.Debug("Debug logging is enabled", "source", source)
 
 	// Get directories from positional arguments or config file
 	args := flag.Args()
@@ -212,21 +229,6 @@ func main() {
 
 	logger.Info("Scanning directories", "directories", config.Directories)
 	logger.Info("Ignoring directories matching patterns", "patterns", config.IgnoreDirs)
-
-	// Show debug logging status and source
-	debugLogging := config.DebugLogging
-	source := "config"
-	if *debugFlag {
-		debugLogging = true
-		source = "command line"
-	} else if *quietFlag {
-		debugLogging = false
-		source = "command line"
-	}
-
-	if debugLogging {
-		logger.Info("Debug logging is enabled", "source", source)
-	}
 
 	// Create MCP server
 	s := server.NewMCPServer(
