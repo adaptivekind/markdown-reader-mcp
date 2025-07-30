@@ -23,15 +23,11 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	query := extractQueryParam(req.Params.Arguments)
 	pageSize := extractPageSizeParam(req.Params.Arguments)
 
-	if config.DebugLogging {
-		logger.Debug("find_markdown_files called", "query", query, "page_size", pageSize)
-	}
+	logger.Debug("find_markdown_files called", "query", query, "page_size", pageSize)
 
 	files, err := findMarkdownFiles(query, pageSize)
 	if err != nil {
-		if config.DebugLogging {
-			logger.Debug("find_markdown_files failed", "error", err)
-		}
+		logger.Debug("find_markdown_files failed", "error", err)
 		return mcp.NewToolResultError(fmt.Sprintf("failed to find markdown files: %v", err)), nil
 	}
 
@@ -53,15 +49,11 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 
 	jsonData, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		if config.DebugLogging {
-			logger.Debug("find_markdown_files failed to marshal JSON", "error", err)
-		}
+		logger.Debug("find_markdown_files failed to marshal JSON", "error", err)
 		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal file list: %v", err)), nil
 	}
 
-	if config.DebugLogging {
-		logger.Debug("find_markdown_files completed successfully", "files_found", len(files))
-	}
+	logger.Debug("find_markdown_files completed successfully", "files_found", len(files))
 
 	return mcp.NewToolResultText(string(jsonData)), nil
 }
@@ -70,9 +62,7 @@ func shouldIgnoreDir(dirName string) bool {
 	for _, pattern := range config.IgnoreDirs {
 		matched, err := regexp.MatchString(pattern, dirName)
 		if err != nil {
-			if config.DebugLogging {
-				logger.Debug("Invalid regex pattern", "pattern", pattern, "error", err)
-			}
+			logger.Debug("Invalid regex pattern", "pattern", pattern, "error", err)
 			continue
 		}
 		if matched {
@@ -181,9 +171,7 @@ func collectMarkdownFilesFromDir(dir string) []string {
 		}
 
 		if d.IsDir() && shouldIgnoreDir(d.Name()) {
-			if config.DebugLogging {
-				logger.Debug("Ignoring directory", "path", path)
-			}
+			logger.Debug("Ignoring directory", "path", path)
 			return filepath.SkipDir
 		}
 
