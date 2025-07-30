@@ -171,7 +171,6 @@ func collectMarkdownFilesFromDir(dir string) []string {
 		}
 
 		if d.IsDir() && shouldIgnoreDir(d.Name()) {
-			logger.Debug("Ignoring directory", "path", path)
 			return filepath.SkipDir
 		}
 

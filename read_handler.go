@@ -125,9 +125,6 @@ func findFirstFileByName(filename string) (string, error) {
 
 			// Skip directories that match ignore patterns
 			if d.IsDir() && shouldIgnoreDir(d.Name()) {
-				if config.DebugLogging {
-					logger.Debug("Ignoring directory", "path", path)
-				}
 				return filepath.SkipDir
 			}
 
@@ -138,7 +135,6 @@ func findFirstFileByName(filename string) (string, error) {
 
 			return nil
 		})
-
 		if err != nil {
 			logger.Warn("Error walking directory", "directory", absDir, "error", err)
 		}

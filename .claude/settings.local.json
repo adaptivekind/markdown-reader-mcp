@@ -18,7 +18,8 @@
       "Bash(timeout:*)",
       "Bash(cp:*)",
       "Bash(go doc:*)",
-      "Bash(PORT=8081 timeout 3s ./markdown-reader-mcp -sse .)"
+      "Bash(PORT=8081 timeout 3s ./markdown-reader-mcp -sse .)",
+      "Bash(true)"
     ],
     "deny": []
   }

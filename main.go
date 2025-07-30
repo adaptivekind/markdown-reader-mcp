@@ -107,7 +107,7 @@ func configureLogger() {
 		logLevel = slog.LevelDebug // Show debug messages when enabled
 	}
 
-	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}))
+	logger = slog.New(newPrettyHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}))
 }
 
 func expandTilde(path string) (string, error) {
@@ -201,7 +201,7 @@ func main() {
 	}
 
 	// Initialize basic logger for startup (will be reconfigured after loading config)
-	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}))
+	logger = slog.New(newPrettyHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}))
 	logger.Debug("Debug logging is enabled", "source", source)
 
 	// Get directories from positional arguments or config file
