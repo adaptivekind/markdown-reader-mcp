@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"log"
+	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,9 +18,97 @@ type Config struct {
 	MaxPageSize  int      `json:"max_page_size,omitempty"`
 	DebugLogging bool     `json:"debug_logging,omitempty"`
 	IgnoreDirs   []string `json:"ignore_dirs,omitempty"`
+	SSEMode      bool     `json:"sse_mode,omitempty"`
 }
 
-var config Config
+var (
+	config    Config
+	logger    *slog.Logger
+	helpFlag  = flag.Bool("help", false, "Show usage information")
+	debugFlag = flag.Bool("debug", false, "Enable debug logging (overrides config)")
+	quietFlag = flag.Bool("quiet", false, "Disable debug logging (overrides config)")
+	sseFlag   = flag.Bool("sse", false, "Enable SSE mode (overrides config)")
+)
+
+func showUsage() {
+	fmt.Printf(`Markdown Reader MCP Server
+
+A Model Context Protocol (MCP) server that provides read-only access to Markdown files
+in configured directories. The server discovers and reads .md files only.
+
+This server uses stdio transport and is designed to work with MCP clients like Claude.
+
+USAGE:
+  %s [options] [directories...]
+  %s -help
+
+OPTIONS:
+  -help    Show this usage information
+  -debug   Enable debug logging (overrides config file setting)
+  -quiet   Disable debug logging (overrides config file setting)
+  -sse     Enable SSE mode (overrides config file setting)
+
+CONFIGURATION:
+  The server can be configured in two ways:
+
+  1. Command-line arguments (directories):
+     %s ~/documents/notes ~/projects/docs /absolute/path
+
+  2. Configuration file (recommended):
+     Create ~/.config/markdown-reader-mcp/markdown-reader-mcp.json:
+     {
+       "directories": ["~/my/notes", "~/projects/docs", "."],
+       "max_page_size": 100,
+       "debug_logging": false,
+       "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"],
+       "sse_mode": false
+     }
+
+CONFIGURATION OPTIONS:
+  directories    - Array of directory paths to scan for markdown files
+  max_page_size  - Maximum results per page (default: %d)
+  debug_logging  - Enable detailed debug logging (default: false)
+  ignore_dirs    - Regex patterns for directories to ignore
+                   (default: ["\\.git$", "node_modules$"])
+  sse_mode       - Enable SSE transport mode (default: false)
+
+INTEGRATION:
+  This server is designed to work with MCP clients like Claude Code:
+    claude mcp add markdown-reader -- %s
+
+TOOLS PROVIDED:
+  find_markdown_files  - Find markdown files with optional filtering and pagination
+  read_markdown_file   - Read content of specific markdown file by filename
+
+EXAMPLES:
+  %s ~/documents/notes                    # Scan single directory
+  %s ~/notes ~/docs .                     # Scan multiple directories
+  %s                                      # Use config file
+  %s -debug ~/docs                        # Enable debug logging via command line
+  %s -quiet                               # Disable debug logging via command line
+  %s -sse ~/docs                          # Enable SSE mode via command line
+
+For more information, see the README.md file.
+`, os.Args[0], os.Args[0], os.Args[0], DefaultMaxPageSize, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+}
+
+func configureLogger() {
+	logLevel := slog.LevelInfo // Default to info, warnings and errors
+
+	// Determine debug logging setting with command line flags taking precedence
+	debugLogging := config.DebugLogging
+	if *debugFlag {
+		debugLogging = true // Command line --debug overrides config
+	} else if *quietFlag {
+		debugLogging = false // Command line --quiet overrides config
+	}
+
+	if debugLogging {
+		logLevel = slog.LevelDebug // Show debug messages when enabled
+	}
+
+	logger = slog.New(newPrettyHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}))
+}
 
 func expandTilde(path string) (string, error) {
 	if !strings.HasPrefix(path, "~") {
@@ -83,13 +172,46 @@ func loadConfigFromFile() (*Config, error) {
 func main() {
 	flag.Parse()
 
+	// Handle help flag
+	if *helpFlag {
+		showUsage()
+		os.Exit(0)
+	}
+
+	// Validate conflicting flags
+	if *debugFlag && *quietFlag {
+		fmt.Fprintf(os.Stderr, "Error: -debug and -quiet flags cannot be used together\n")
+		os.Exit(1)
+	}
+
+	// Show debug logging status and source
+	debugLogging := config.DebugLogging
+	source := "config"
+	if *debugFlag {
+		debugLogging = true
+		source = "command line"
+	} else if *quietFlag {
+		debugLogging = false
+		source = "command line"
+	}
+
+	logLevel := slog.LevelWarn
+	if debugLogging {
+		logLevel = slog.LevelDebug
+	}
+
+	// Initialize basic logger for startup (will be reconfigured after loading config)
+	logger = slog.New(newPrettyHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}))
+	logger.Debug("Debug logging is enabled", "source", source)
+
 	// Get directories from positional arguments or config file
 	args := flag.Args()
 	if len(args) == 0 {
 		// Try to load from config file
 		cfg, err := loadConfigFromFile()
 		if err != nil {
-			log.Fatalf("No command arguments provided and could not load config file: %v", err)
+			logger.Error("No command arguments provided and could not load config file", "error", err)
+			os.Exit(1)
 		}
 		config = *cfg
 	} else {
@@ -102,12 +224,11 @@ func main() {
 		config.IgnoreDirs = []string{`\.git$`, `node_modules$`}
 	}
 
-	log.Printf("Scanning directories: %v", config.Directories)
-	log.Printf("Ignoring directories matching patterns: %v", config.IgnoreDirs)
+	// Configure logger based on the loaded config
+	configureLogger()
 
-	if config.DebugLogging {
-		log.Printf("[CONFIG] Debug logging is enabled")
-	}
+	logger.Info("Scanning directories", "directories", config.Directories)
+	logger.Info("Ignoring directories matching patterns", "patterns", config.IgnoreDirs)
 
 	// Create MCP server
 	s := server.NewMCPServer(
@@ -143,9 +264,29 @@ func main() {
 		handleReadMarkdownFile,
 	)
 
+	// Determine SSE mode setting with command line flag taking precedence
+	sseMode := config.SSEMode
+	if *sseFlag {
+		sseMode = true
+	}
+
 	// Start the server
-	log.Println("Starting Markdown Reader MCP server...")
-	if err := server.ServeStdio(s); err != nil {
-		log.Fatalf("Server error: %v", err)
+	if sseMode {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		logger.Info("Starting Markdown Reader MCP server in SSE mode", "port", port)
+		sseServer := server.NewSSEServer(s)
+		if err := sseServer.Start(":" + port); err != nil {
+			logger.Error("SSE server error", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		logger.Info("Starting Markdown Reader MCP server in stdio mode")
+		if err := server.ServeStdio(s); err != nil {
+			logger.Error("Server error", "error", err)
+			os.Exit(1)
+		}
 	}
 }

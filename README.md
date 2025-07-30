@@ -84,6 +84,18 @@ claude mcp list
 claude mcp remove markdown-reader
 ```
 
+The server can be started with SSE transport
+
+```sh
+./markdown-reader-mcp -sse
+```
+
+and registered with
+
+```sh
+claude mcp add --transport sse markdown-reader http://localhost:8080/sse
+```
+
 #### Claude Desktop App
 
 Add to your Claude Desktop MCP settings file:
