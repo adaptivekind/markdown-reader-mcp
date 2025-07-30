@@ -20,14 +20,36 @@ markdown-reader -- markdown-reader-mcp`
 A use case of this is the provisioning of a controlled collection of
 prompts and context that can be applied for all agents running locally. For
 example, this can be achieved by providing a master prompt in a file called
-`universal-guidance.md` and then referencing this by prompting.
+`precepts.md` and then referencing this by prompting.
 
 ```txt
-Please follow universal.guidance.md from Markdown Reader MCP
+Apply precepts.md from MCP Reader
 ```
 
 The agent will discover your master prompt and use it going forward. This
-`univeral-guidance.md` prompt can reference other prompts to be loaded.
+`precepts.md` prompt can reference other prompts to be loaded.
+
+## Claude Commands
+
+Set up project command
+
+```sh
+echo "Apply precepts.md from MCP Reader" > .claude/commands/precepts.md
+```
+
+Set up personal command
+
+```sh
+mkdir -p ~/.claude/commands
+echo "Apply precepts.md from MCP Reader" > ~/.claude/commands/precepts.md
+
+```
+
+Then to apply in a Claude code session with
+
+```sh
+/precepts
+```
 
 ## Installation & Setup
 
@@ -83,7 +105,7 @@ claude mcp add markdown-reader -s user -- markdown-reader-mcp
 claude mcp list
 
 # Remove MCP
-claude mcp remove markdown-reader
+claude mcp remove markdown
 ```
 
 The server can be started with SSE transport
