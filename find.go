@@ -16,36 +16,16 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+const (
+	DefaultPageSize    = 50
+	DefaultMaxPageSize = 500
+)
+
 func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	startTime := time.Now()
 
-	// Parse query parameter
-	query := ""
-	if req.Params.Arguments != nil {
-		if argsMap, ok := req.Params.Arguments.(map[string]any); ok {
-			if queryParam, exists := argsMap["query"]; exists {
-				if queryStr, ok := queryParam.(string); ok {
-					query = queryStr
-				}
-			}
-		}
-	}
-
-	// Parse page_size parameter
-	pageSize := 50 // Default page size
-	if req.Params.Arguments != nil {
-		if argsMap, ok := req.Params.Arguments.(map[string]any); ok {
-			if pageSizeParam, exists := argsMap["page_size"]; exists {
-				if pageSizeStr, ok := pageSizeParam.(string); ok {
-					if parsedSize, err := strconv.Atoi(pageSizeStr); err == nil {
-						pageSize = parsedSize
-					}
-				} else if pageSizeFloat, ok := pageSizeParam.(float64); ok {
-					pageSize = int(pageSizeFloat)
-				}
-			}
-		}
-	}
+	query := extractQueryParam(req.Params.Arguments)
+	pageSize := extractPageSizeParam(req.Params.Arguments)
 
 	if config.DebugLogging {
 		log.Printf("[DEBUG] find_markdown_files called with query='%s', page_size=%d", query, pageSize)
@@ -97,7 +77,6 @@ func shouldIgnoreDir(dirName string) bool {
 	for _, pattern := range config.IgnoreDirs {
 		matched, err := regexp.MatchString(pattern, dirName)
 		if err != nil {
-			// If regex is invalid, log warning and continue
 			if config.DebugLogging {
 				log.Printf("[DEBUG] Invalid regex pattern '%s': %v", pattern, err)
 			}
@@ -113,43 +92,10 @@ func shouldIgnoreDir(dirName string) bool {
 func findMarkdownFiles(query string, pageSize int) ([]string, error) {
 	var allMarkdownFiles []string
 
-	// Collect all markdown files first
+	// Collect all markdown files from each directory
 	for _, dir := range config.Directories {
-		// Convert relative paths to absolute
-		absDir, err := filepath.Abs(dir)
-		if err != nil {
-			log.Printf("Warning: Could not resolve absolute path for %s: %v", dir, err)
-			continue
-		}
-
-		// Check if directory exists
-		if _, err := os.Stat(absDir); os.IsNotExist(err) {
-			log.Printf("Warning: Directory does not exist: %s", absDir)
-			continue
-		}
-
-		err = filepath.WalkDir(absDir, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return nil // Skip files that can't be accessed
-			}
-
-			// Skip directories that match ignore patterns
-			if d.IsDir() && shouldIgnoreDir(d.Name()) {
-				if config.DebugLogging {
-					log.Printf("[DEBUG] Ignoring directory: %s", path)
-				}
-				return filepath.SkipDir
-			}
-
-			if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
-				allMarkdownFiles = append(allMarkdownFiles, path)
-			}
-
-			return nil
-		})
-		if err != nil {
-			log.Printf("Warning: Error walking directory %s: %v", absDir, err)
-		}
+		files := collectMarkdownFilesFromDir(dir)
+		allMarkdownFiles = append(allMarkdownFiles, files...)
 	}
 
 	// Filter by query if provided
@@ -168,7 +114,7 @@ func findMarkdownFiles(query string, pageSize int) ([]string, error) {
 
 	// Apply pagination
 	if pageSize <= 0 || pageSize > config.MaxPageSize {
-		pageSize = 50 // Default page size
+		pageSize = DefaultPageSize
 	}
 
 	if len(filteredFiles) <= pageSize {
@@ -176,4 +122,87 @@ func findMarkdownFiles(query string, pageSize int) ([]string, error) {
 	}
 
 	return filteredFiles[:pageSize], nil
+}
+
+func extractQueryParam(arguments any) string {
+	argsMap, ok := arguments.(map[string]any)
+	if !ok {
+		return ""
+	}
+
+	queryParam, exists := argsMap["query"]
+	if !exists {
+		return ""
+	}
+
+	queryStr, ok := queryParam.(string)
+	if !ok {
+		return ""
+	}
+
+	return queryStr
+}
+
+func extractPageSizeParam(arguments any) int {
+	defaultPageSize := DefaultPageSize
+
+	argsMap, ok := arguments.(map[string]any)
+	if !ok {
+		return defaultPageSize
+	}
+
+	pageSizeParam, exists := argsMap["page_size"]
+	if !exists {
+		return defaultPageSize
+	}
+
+	if pageSizeStr, ok := pageSizeParam.(string); ok {
+		if parsedSize, err := strconv.Atoi(pageSizeStr); err == nil {
+			return parsedSize
+		}
+	}
+
+	if pageSizeFloat, ok := pageSizeParam.(float64); ok {
+		return int(pageSizeFloat)
+	}
+
+	return defaultPageSize
+}
+
+func collectMarkdownFilesFromDir(dir string) []string {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		log.Printf("Warning: Could not resolve absolute path for %s: %v", dir, err)
+		return nil
+	}
+
+	if _, err := os.Stat(absDir); os.IsNotExist(err) {
+		log.Printf("Warning: Directory does not exist: %s", absDir)
+		return nil
+	}
+
+	var files []string
+	err = filepath.WalkDir(absDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		if d.IsDir() && shouldIgnoreDir(d.Name()) {
+			if config.DebugLogging {
+				log.Printf("[DEBUG] Ignoring directory: %s", path)
+			}
+			return filepath.SkipDir
+		}
+
+		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
+			files = append(files, path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		log.Printf("Warning: Error walking directory %s: %v", absDir, err)
+	}
+
+	return files
 }

@@ -88,8 +88,8 @@ func TestConfigDefaultMaxPageSize(t *testing.T) {
 		t.Fatalf("Failed to load config: %v", err)
 	}
 
-	if cfg.MaxPageSize != 500 {
-		t.Errorf("Expected default MaxPageSize 500, got %d", cfg.MaxPageSize)
+	if cfg.MaxPageSize != DefaultMaxPageSize {
+		t.Errorf("Expected default MaxPageSize %d, got %d", DefaultMaxPageSize, cfg.MaxPageSize)
 	}
 
 	if cfg.DebugLogging {
@@ -177,7 +177,7 @@ func TestDebugLoggingConfiguration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config = Config{
 				Directories:  []string{"test/dir1"},
-				MaxPageSize:  500,
+				MaxPageSize:  DefaultMaxPageSize,
 				DebugLogging: tt.debugLogging,
 			}
 

@@ -10,58 +10,24 @@ MARKDOWN** documents, i.e. files ending with **.md** extension.
 
 1. Build: `go build`
 2. Configure: Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`
-   with your directories
-3. Add to Claude Code: `claude mcp add markdown-reader -- markdown-reader-mcp`
-4. Add to Claude Desktop: Add to your MCP settings file
-5. Use: Ask Claude to "find markdown files" or "read README"
-
-**What it does:**
-
-- 🔍 **Find markdown files** with optional filtering and pagination
-- 📖 **Read markdown files** by filename across multiple directories
-- 🚫 **Ignores directories** like `.git`, `node_modules` by default
+   with your directories you'd like to be discovered through this server.
+3. Add to you AI tooling, for example with Claude Code: `claude mcp add
+markdown-reader -- markdown-reader-mcp`
+4. Use: Ask to "find markdown files" or "read README"
 
 ## Use Case: Master Prompt
 
-A primary use case of this is the provisioning of a controlled personal
-collection of prompts and context that can be applied for all local agents. For
+A use case of this is the provisioning of a controlled collection of
+prompts and context that can be applied for all agents running locally. For
 example, this can be achieved by providing a master prompt in a file called
-`my-tone-of-voice.md` and then referencing this by prompting.
+`universal-guidance.md` and then referencing this by prompting.
 
 ```txt
-Please use my-tone-of-voice.md from Markdown Reader MCP at all times
+Please follow universal.guidance.md from Markdown Reader MCP
 ```
 
 The agent will discover your master prompt and use it going forward. This
-`my-tone-of-voice.md` prompt can reference other prompts, for example, by
-including:
-
-```markdown
-- You MUST follow guidance in `my-universal-guidance.md`
-```
-
-And storing universal guidance in `my-universal-guidance.md`
-
-```markdown
-# My universal guidance
-
-## Requirements
-
-- You MUST not use an em dash "—", you can use a normal dash "-".
-- You MUST write in a natural and serious voice.
-- You MUST NOT add humorous anecdotes.
-- You MUST NOT show excessive enthusiasm.
-
-## Finding reference material
-
-- If you need to find information about myself, please see if the material can
-  be found in the markdown files from the Markdown Reader MCP.
-- If you need to search the web for information, please also search for material
-  in the markdown files from the Markdown Reader MCP.
-```
-
-This approach can then discover any notes (in your markdown directories) about
-yourself as needed.
+`univeral-guidance.md` prompt can reference other prompts to be loaded.
 
 ## Installation & Setup
 
@@ -87,7 +53,7 @@ Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
 
 ```json
 {
-  "directories": ["~/Documents/notes", "~/projects/docs", "/absolute/path"],
+  "directories": ["~/my/notes", "~/projects/docs", "/absolute/path"],
   "max_page_size": 100,
   "debug_logging": false,
   "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"]
@@ -169,7 +135,8 @@ Once configured, you can ask Claude:
 - **`directories`**: Array of directory paths to scan for markdown files
 - **`max_page_size`** (optional): Maximum results per page. Default: 500
 - **`debug_logging`** (optional): Enable detailed debug logging. Default: false
-- **`ignore_dirs`** (optional): Regex patterns for directories to ignore. Default: `["\\.git$", "node_modules$"]`
+- **`ignore_dirs`** (optional): Regex patterns for directories to ignore.
+  Default: `["\\.git$", "node_modules$"]`
 
 ### Directory Filtering
 
@@ -180,7 +147,7 @@ The server automatically ignores common directories that shouldn't contain user 
 - `.git` - Version control directories
 - `node_modules` - Node.js dependencies
 
-**Custom patterns example:**
+**Custom regex patterns example:**
 
 ```json
 {
@@ -192,13 +159,6 @@ The server automatically ignores common directories that shouldn't contain user 
   ]
 }
 ```
-
-**Pattern syntax:**
-
-- Use Go `regexp` syntax
-- End with `$` to match directory name exactly
-- Escape dots: `\\.git$` not `.git$`
-- Invalid patterns are logged and ignored
 
 ## Tools Reference
 
@@ -243,7 +203,8 @@ claude mcp list
 
 ### Claude Desktop
 
-Look for the server in the MCP section of Claude Desktop settings, or check the logs for startup messages.
+Look for the server in the MCP section of Claude Desktop settings, or check the
+logs for startup messages.
 
 ### Manual Testing
 
