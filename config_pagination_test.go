@@ -17,11 +17,12 @@ func TestConfigWithMaxPageSize(t *testing.T) {
 
 	configPath := filepath.Join(configDir, "markdown-reader-mcp.json")
 
-	// Test config data with max_page_size and log_file
+	// Test config data with max_page_size, sse_port, and log_file
 	testConfig := Config{
 		Directories:  []string{"docs", "guides"},
 		MaxPageSize:  100,
 		DebugLogging: true,
+		SSEPort:      9090,
 		LogFile:      "~/test/logs/server.log",
 	}
 
@@ -51,6 +52,10 @@ func TestConfigWithMaxPageSize(t *testing.T) {
 
 	if !cfg.DebugLogging {
 		t.Errorf("Expected DebugLogging true, got %v", cfg.DebugLogging)
+	}
+
+	if cfg.SSEPort != 9090 {
+		t.Errorf("Expected SSEPort 9090, got %d", cfg.SSEPort)
 	}
 
 	if cfg.LogFile != "~/test/logs/server.log" {
@@ -196,6 +201,80 @@ func TestDebugLoggingConfiguration(t *testing.T) {
 			// but we can verify the config is being respected and function works
 			if len(files) < 0 { // This will never be true, but ensures files is used
 				t.Error("Unexpected negative file count")
+			}
+		})
+	}
+}
+
+func TestSSEPortConfiguration(t *testing.T) {
+	// Create a temporary directory for home
+	tempDir, err := os.MkdirTemp("", "mcp-test-home")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create config directory structure
+	configDir := filepath.Join(tempDir, ".config", "markdown-reader-mcp")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		t.Fatalf("Failed to create config dir: %v", err)
+	}
+
+	configPath := filepath.Join(configDir, "markdown-reader-mcp.json")
+
+	tests := []struct {
+		name     string
+		ssePort  int
+		expected int
+	}{
+		{
+			name:     "custom port 9090",
+			ssePort:  9090,
+			expected: 9090,
+		},
+		{
+			name:     "port 3000",
+			ssePort:  3000,
+			expected: 3000,
+		},
+		{
+			name:     "zero port (default)",
+			ssePort:  0,
+			expected: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test config with SSE port
+			testConfig := Config{
+				Directories: []string{"test"},
+				SSEPort:     tt.ssePort,
+			}
+
+			configData, err := json.Marshal(testConfig)
+			if err != nil {
+				t.Fatalf("Failed to marshal test config: %v", err)
+			}
+
+			err = os.WriteFile(configPath, configData, 0644)
+			if err != nil {
+				t.Fatalf("Failed to write config file: %v", err)
+			}
+
+			// Mock the home directory for testing
+			originalHome := os.Getenv("HOME")
+			defer os.Setenv("HOME", originalHome)
+			os.Setenv("HOME", tempDir)
+
+			// Load config
+			cfg, err := loadConfigFromFile()
+			if err != nil {
+				t.Fatalf("Failed to load config: %v", err)
+			}
+
+			if cfg.SSEPort != tt.expected {
+				t.Errorf("Expected SSEPort %d, got %d", tt.expected, cfg.SSEPort)
 			}
 		})
 	}

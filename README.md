@@ -57,6 +57,7 @@ Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
   "max_page_size": 100,
   "debug_logging": false,
   "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"],
+  "sse_port": 8080,
   "log_file": "~/local/logs/markdown-reader-mcp.log"
 }
 ```
@@ -162,6 +163,7 @@ Once configured, you can ask Claude:
 - **`debug_logging`** (optional): Enable detailed debug logging. Default: false
 - **`ignore_dirs`** (optional): Regex patterns for directories to ignore.
   Default: `["\\.git$", "node_modules$"]`
+- **`sse_port`** (optional): Port for SSE server. Default: 8080
 - **`log_file`** (optional): Path to log file. Default: stderr. Supports tilde expansion.
 
 ### Directory Filtering

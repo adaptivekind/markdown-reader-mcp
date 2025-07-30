@@ -19,6 +19,7 @@ type Config struct {
 	DebugLogging bool     `json:"debug_logging,omitempty"`
 	IgnoreDirs   []string `json:"ignore_dirs,omitempty"`
 	SSEMode      bool     `json:"sse_mode,omitempty"`
+	SSEPort      int      `json:"sse_port,omitempty"`
 	LogFile      string   `json:"log_file,omitempty"`
 }
 
@@ -63,6 +64,7 @@ CONFIGURATION:
        "debug_logging": false,
        "ignore_dirs": ["\\.git$", "node_modules$", "vendor$"],
        "sse_mode": false,
+       "sse_port": 8080,
        "log_file": "~/logs/markdown-reader-mcp.log"
      }
 
@@ -73,6 +75,7 @@ CONFIGURATION OPTIONS:
   ignore_dirs    - Regex patterns for directories to ignore
                    (default: ["\\.git$", "node_modules$"])
   sse_mode       - Enable SSE transport mode (default: false)
+  sse_port       - Port for SSE server (default: 8080)
   log_file       - Path to log file (default: stderr)
 
 INTEGRATION:
@@ -257,9 +260,13 @@ func main() {
 
 	// Start the server
 	if sseMode {
-		port := os.Getenv("PORT")
-		if port == "" {
-			port = "8080"
+		var port string
+		if config.SSEPort != 0 {
+			port = fmt.Sprintf("%d", config.SSEPort)
+		} else if envPort := os.Getenv("PORT"); envPort != "" {
+			port = envPort
+		} else {
+			port = "8080" // Default port
 		}
 		logger.Info("Starting Markdown Reader MCP server in SSE mode", "port", port)
 		sseServer := server.NewSSEServer(s)
