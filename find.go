@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -21,8 +20,6 @@ const (
 )
 
 func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	startTime := time.Now()
-
 	query := extractQueryParam(req.Params.Arguments)
 	pageSize := extractPageSizeParam(req.Params.Arguments)
 
@@ -33,8 +30,7 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	files, err := findMarkdownFiles(query, pageSize)
 	if err != nil {
 		if config.DebugLogging {
-			duration := time.Since(startTime)
-			logger.Debug("find_markdown_files failed", "duration", duration, "error", err)
+			logger.Debug("find_markdown_files failed", "error", err)
 		}
 		return mcp.NewToolResultError(fmt.Sprintf("failed to find markdown files: %v", err)), nil
 	}
@@ -58,15 +54,13 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	jsonData, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		if config.DebugLogging {
-			duration := time.Since(startTime)
-			logger.Debug("find_markdown_files failed to marshal JSON", "duration", duration, "error", err)
+			logger.Debug("find_markdown_files failed to marshal JSON", "error", err)
 		}
 		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal file list: %v", err)), nil
 	}
 
 	if config.DebugLogging {
-		duration := time.Since(startTime)
-		logger.Debug("find_markdown_files completed successfully", "duration", duration, "files_found", len(files))
+		logger.Debug("find_markdown_files completed successfully", "files_found", len(files))
 	}
 
 	return mcp.NewToolResultText(string(jsonData)), nil
