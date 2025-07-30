@@ -69,12 +69,10 @@ func loadConfigFromFile() (*Config, error) {
 		cfg.Directories[i] = expandedDir
 	}
 
-	// Set default max page size if not configured
 	if cfg.MaxPageSize == 0 {
-		cfg.MaxPageSize = 500
+		cfg.MaxPageSize = DefaultMaxPageSize
 	}
 
-	// Set default ignore directories if not configured
 	if len(cfg.IgnoreDirs) == 0 {
 		cfg.IgnoreDirs = []string{`\.git$`, `node_modules$`}
 	}
@@ -97,7 +95,7 @@ func main() {
 	} else {
 		config.Directories = args
 		// Set default max page size for command-line usage
-		config.MaxPageSize = 500
+		config.MaxPageSize = DefaultMaxPageSize
 		// Debug logging is disabled by default for command-line usage
 		config.DebugLogging = false
 		// Set default ignore directories for command-line usage

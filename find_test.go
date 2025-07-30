@@ -85,7 +85,7 @@ func TestFindMarkdownFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config = Config{
 				Directories: tt.dirs,
-				MaxPageSize: 500,
+				MaxPageSize: DefaultMaxPageSize,
 				IgnoreDirs:  []string{`\.git$`, `node_modules$`}, // Default ignore patterns
 			}
 			defer func() { config = oldConfig }()
@@ -139,7 +139,7 @@ func TestShouldIgnoreDir(t *testing.T) {
 	oldConfig := config
 	config = Config{
 		Directories:  []string{},
-		MaxPageSize:  500,
+		MaxPageSize:  DefaultMaxPageSize,
 		DebugLogging: false,
 		IgnoreDirs:   []string{`^\.git$`, `^node_modules$`, `^temp.+$`},
 	}
@@ -176,7 +176,7 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 	testDir := "test/dir1"
 
 	// Set config to test directory
-	config = Config{Directories: []string{testDir}, MaxPageSize: 500}
+	config = Config{Directories: []string{testDir}, MaxPageSize: DefaultMaxPageSize}
 	defer func() { config = oldConfig }()
 
 	tests := []struct {
@@ -331,7 +331,7 @@ func TestHandleFindMarkdownFilesWithIgnoredDirs(t *testing.T) {
 	testDir := "test/ignore_test"
 	config = Config{
 		Directories:  []string{testDir},
-		MaxPageSize:  500,
+		MaxPageSize:  DefaultMaxPageSize,
 		DebugLogging: false,
 		IgnoreDirs:   []string{`\.git$`, `node_modules$`},
 	}

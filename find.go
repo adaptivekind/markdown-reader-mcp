@@ -16,7 +16,10 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-const DefaultPageSize = 50
+const (
+	DefaultPageSize    = 50
+	DefaultMaxPageSize = 500
+)
 
 func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	startTime := time.Now()
@@ -74,7 +77,6 @@ func shouldIgnoreDir(dirName string) bool {
 	for _, pattern := range config.IgnoreDirs {
 		matched, err := regexp.MatchString(pattern, dirName)
 		if err != nil {
-			// If regex is invalid, log warning and continue
 			if config.DebugLogging {
 				log.Printf("[DEBUG] Invalid regex pattern '%s': %v", pattern, err)
 			}
@@ -182,7 +184,7 @@ func collectMarkdownFilesFromDir(dir string) []string {
 	var files []string
 	err = filepath.WalkDir(absDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return nil // Skip files that can't be accessed
+			return nil
 		}
 
 		if d.IsDir() && shouldIgnoreDir(d.Name()) {
@@ -198,7 +200,6 @@ func collectMarkdownFilesFromDir(dir string) []string {
 
 		return nil
 	})
-
 	if err != nil {
 		log.Printf("Warning: Error walking directory %s: %v", absDir, err)
 	}
