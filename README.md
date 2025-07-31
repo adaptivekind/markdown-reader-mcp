@@ -117,7 +117,7 @@ The server can be started with SSE transport
 and registered with
 
 ```sh
-claude mcp add --transport sse markdown-reader http://localhost:8080/sse
+claude mcp add -s user --transport sse markdown-reader http://localhost:8080/sse
 ```
 
 ## Run as service in Mac OS with Launchd
