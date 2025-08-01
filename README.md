@@ -27,7 +27,24 @@ Apply precepts.md from MCP Reader
 ```
 
 The agent will discover your master prompt and use it going forward. This
-`precepts.md` prompt can reference other prompts to be loaded.
+`precepts.md` prompt can reference other prompts to be loaded for specific
+tasks by including a guidance table:
+
+```markdown
+## Guidance for specific tasks
+
+| Task                          | Markdown to read        |
+| ----------------------------- | ----------------------- |
+| Writing a README file         | `readme-guidance.md`    |
+| Writing API documentation     | `api-docs-guidance.md`  |
+| Code review and refactoring   | `code-review-guide.md`  |
+```
+
+This approach allows you to maintain specialised guidance for different
+development tasks while keeping your master prompt organised. The referenced
+markdown files are only loaded when actually needed for a specific task,
+keeping the current context focused and preventing unnecessary pollution of
+the conversation.
 
 ## Claude Commands
 
@@ -108,7 +125,7 @@ claude mcp list
 claude mcp remove markdown
 ```
 
-The server can be started with SSE transport
+The server can be started with SSE transport (useful when running Claude in a container like [claude-sandbox](https://github.com/adaptivekind/claude-sandbox)):
 
 ```sh
 ./markdown-reader-mcp -sse
