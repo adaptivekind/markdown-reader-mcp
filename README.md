@@ -11,8 +11,7 @@ MARKDOWN** documents, i.e. files ending with **.md** extension.
 1. Build: `go build`
 2. Configure: Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`
    with your directories you'd like to be discovered through this server.
-3. Add to you AI tooling, for example with Claude Code: `claude mcp add
-markdown-reader -- markdown-reader-mcp`
+3. Add to your MCP-compatible AI agent (see Integration section below)
 4. Use: Ask to "find markdown files" or "read README"
 
 ## Use Case: Master Prompt
@@ -26,7 +25,7 @@ example, this can be achieved by providing a master prompt in a file called
 Apply precepts.md from MCP Reader
 ```
 
-The agent will discover your master prompt and use it going forward. This
+The MCP-compatible agent will discover your master prompt and use it going forward. This
 `precepts.md` prompt can reference other prompts to be loaded for specific
 tasks by including a guidance table:
 
@@ -46,23 +45,24 @@ markdown files are only loaded when actually needed for a specific task,
 keeping the current context focused and preventing unnecessary pollution of
 the conversation.
 
-## Claude Commands
+## Agent Integration Examples
 
-Set up project command
+### Claude Code CLI
+
+Set up project command:
 
 ```sh
 echo "Apply precepts.md from MCP Reader" > .claude/commands/precepts.md
 ```
 
-Set up personal command
+Set up personal command:
 
 ```sh
 mkdir -p ~/.claude/commands
 echo "Apply precepts.md from MCP Reader" > ~/.claude/commands/precepts.md
-
 ```
 
-Then to apply in a Claude code session with
+Then apply in a Claude Code session with:
 
 ```sh
 /precepts
@@ -107,7 +107,7 @@ Create `~/.config/markdown-reader-mcp/markdown-reader-mcp.json`:
 ./markdown-reader-mcp ~/documents/notes ~/projects/docs
 ```
 
-### 3. Integration with Claude
+### 3. Integration with MCP Clients
 
 #### Claude Code CLI
 
@@ -125,7 +125,7 @@ claude mcp list
 claude mcp remove markdown
 ```
 
-The server can be started with SSE transport (useful when running Claude in a container like [claude-sandbox](https://github.com/adaptivekind/claude-sandbox)):
+The server can be started with SSE transport (useful when running agents in containers or remote environments):
 
 ```sh
 ./markdown-reader-mcp -sse
@@ -185,7 +185,7 @@ Or with command-line arguments:
 
 ## Usage Examples
 
-Once configured, you can ask Claude:
+Once configured, you can ask your MCP-compatible agent:
 
 - **"Show me all markdown files in the project"** → Uses `find_markdown_files`
 - **"Find files containing 'api' in the name"** → Uses `find_markdown_files` with query
@@ -258,7 +258,9 @@ Enable with `"debug_logging": true` in config file.
 
 ## Verification
 
-### Claude Code
+### MCP Client Verification
+
+#### Claude Code
 
 ```sh
 # Check MCP server status
@@ -268,10 +270,14 @@ claude mcp list
 /mcp
 ```
 
-### Claude Desktop
+#### Claude Desktop
 
 Look for the server in the MCP section of Claude Desktop settings, or check the
 logs for startup messages.
+
+#### Other MCP Clients
+
+Refer to your specific MCP client's documentation for verification steps.
 
 ### Manual Testing
 
