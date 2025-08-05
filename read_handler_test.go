@@ -85,7 +85,7 @@ func TestFindFirstFileByName(t *testing.T) {
 	}
 }
 
-func TestHandleReadMarkdownFile(t *testing.T) {
+func TestHandleReadMarkdownFileResource(t *testing.T) {
 	// Setup test environment
 	oldConfig := config
 	oldLogger := logger
@@ -106,13 +106,19 @@ func TestHandleReadMarkdownFile(t *testing.T) {
 		wantContent string
 	}{
 		{
-			name:        "read existing file by name only",
+			name:        "read file in top level dirTestHandleFindAllMarkdown/successful_listctory",
 			filename:    "foo.md",
 			wantError:   false,
 			wantContent: "# Foo\n\nFoo markdown document\n",
 		},
 		{
-			name:        "read existing file by name without extension",
+			name:        "read file in child directory",
+			filename:    "bar.md",
+			wantError:   false,
+			wantContent: "# Bar\n\nBar markdown document\n",
+		},
+		{
+			name:        "read file without extension",
 			filename:    "foo",
 			wantError:   false,
 			wantContent: "# Foo\n\nFoo markdown document\n",
@@ -136,24 +142,17 @@ func TestHandleReadMarkdownFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := mcp.CallToolRequest{
-				Params: mcp.CallToolParams{
-					Name: "read_markdown_file",
-					Arguments: map[string]any{
-						"filename": tt.filename,
-					},
+			req := mcp.ReadResourceRequest{
+				Params: mcp.ReadResourceParams{
+					URI: "file://" + tt.filename,
 				},
 			}
 
-			result, err := handleReadMarkdownFile(context.Background(), req)
+			result, err := handleReadMarkdownFileResource(context.Background(), req)
 
 			if tt.wantError {
-				if err != nil {
-					t.Errorf("Expected tool result error, got function error: %v", err)
-					return
-				}
-				if !result.IsError {
-					t.Error("Expected error result but got success")
+				if err == nil {
+					t.Error("Expected error but got none")
 				}
 				return
 			}
@@ -163,24 +162,27 @@ func TestHandleReadMarkdownFile(t *testing.T) {
 				return
 			}
 
-			if result.IsError {
-				t.Errorf("Expected success but got error: %v", result.Content)
+			if len(result) != 1 {
+				t.Errorf("Expected 1 resource content, got %d", len(result))
 				return
 			}
 
-			if len(result.Content) != 1 {
-				t.Errorf("Expected 1 content item, got %d", len(result.Content))
-				return
-			}
-
-			textContent, ok := result.Content[0].(mcp.TextContent)
+			textResourceContent, ok := result[0].(mcp.TextResourceContents)
 			if !ok {
-				t.Errorf("Expected TextContent, got %T", result.Content[0])
+				t.Errorf("Expected TextResourceContents, got %T", result[0])
 				return
 			}
 
-			if textContent.Text != tt.wantContent {
-				t.Errorf("Expected content %q, got %q", tt.wantContent, textContent.Text)
+			if textResourceContent.Text != tt.wantContent {
+				t.Errorf("Expected content %q, got %q", tt.wantContent, textResourceContent.Text)
+			}
+
+			if textResourceContent.MIMEType != "text/markdown" {
+				t.Errorf("Expected MIME type 'text/markdown', got %q", textResourceContent.MIMEType)
+			}
+
+			if textResourceContent.URI != req.Params.URI {
+				t.Errorf("Expected URI %q, got %q", req.Params.URI, textResourceContent.URI)
 			}
 		})
 	}

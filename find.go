@@ -31,20 +31,17 @@ func handleFindMarkdownFiles(ctx context.Context, req mcp.CallToolRequest) (*mcp
 		return mcp.NewToolResultError(fmt.Sprintf("failed to find markdown files: %v", err)), nil
 	}
 
-	// Create file info objects
+	// Create file info objects with only filename (no absolute paths)
 	fileInfos := make([]map[string]any, 0, len(files))
 	for _, file := range files {
 		fileInfos = append(fileInfos, map[string]any{
-			"path":         file,
-			"name":         filepath.Base(file),
-			"relativePath": strings.TrimPrefix(file, filepath.Dir(file)+string(filepath.Separator)),
+			"name": filepath.Base(file),
 		})
 	}
 
 	result := map[string]any{
-		"directories": config.Directories,
-		"files":       fileInfos,
-		"count":       len(fileInfos),
+		"files": fileInfos,
+		"count": len(fileInfos),
 	}
 
 	jsonData, err := json.MarshalIndent(result, "", "  ")

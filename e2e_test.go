@@ -155,13 +155,14 @@ func createResourceListRequest(id int) map[string]any {
 }
 
 func createResourceReadRequest(id int, uri string) map[string]any {
+	params := map[string]any{
+		"uri": uri,
+	}
 	return map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  "resources/read",
-		"params": map[string]any{
-			"uri": uri,
-		},
+		"params":  params,
 	}
 }
 
@@ -237,50 +238,6 @@ func TestServerInitialization(t *testing.T) {
 	}
 }
 
-func TestResourcesList(t *testing.T) {
-	client := NewMCPTestClient(t)
-	defer client.Close()
-
-	// Initialize first
-	_, err := client.SendRequest(createInitializeRequest(1))
-	if err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
-	}
-
-	// List resources
-	response, err := client.SendRequest(createResourceListRequest(2))
-	if err != nil {
-		t.Fatalf("Failed to list resources: %v", err)
-	}
-
-	result, ok := response["result"].(map[string]any)
-	if !ok {
-		t.Fatalf("Expected result object")
-	}
-
-	resources, ok := result["resources"].([]any)
-	if !ok {
-		t.Fatalf("Expected resources array")
-	}
-
-	// Verify we have the expected resources (should be empty now)
-	expectedResources := map[string]bool{}
-
-	for _, resource := range resources {
-		res := resource.(map[string]any)
-		uri := res["uri"].(string)
-		if _, exists := expectedResources[uri]; exists {
-			expectedResources[uri] = true
-		}
-	}
-
-	for uri, found := range expectedResources {
-		if !found {
-			t.Errorf("Expected resource %s not found", uri)
-		}
-	}
-}
-
 func TestMarkdownFilesList(t *testing.T) {
 	client := NewMCPTestClient(t)
 	defer client.Close()
@@ -330,15 +287,15 @@ func TestMarkdownFilesList(t *testing.T) {
 	foundTestFile := false
 	for _, file := range files {
 		fileData := file.(map[string]any)
-		path := fileData["path"].(string)
-		if strings.Contains(path, "test/dir1") {
+		name := fileData["name"].(string)
+		if name == "foo.md" || name == "bar.md" || name == "baz.md" {
 			foundTestFile = true
 			break
 		}
 	}
 
 	if !foundTestFile {
-		t.Error("Expected to find files from test directory")
+		t.Error("Expected to find test files (foo.md, bar.md, or baz.md)")
 	}
 }
 
@@ -352,11 +309,8 @@ func TestMarkdownFileRead(t *testing.T) {
 		t.Fatalf("Failed to initialize: %v", err)
 	}
 
-	// Test reading a specific markdown file using the tool
-	testFile := "bar.md"
-	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
-		"filename": testFile,
-	}))
+	// Test reading a specific markdown file using the resource
+	response, err := client.SendRequest(createResourceReadRequest(2, "file://bar.md"))
 	if err != nil {
 		t.Fatalf("Failed to read markdown file: %v", err)
 	}
@@ -366,78 +320,17 @@ func TestMarkdownFileRead(t *testing.T) {
 		t.Fatalf("Expected result object")
 	}
 
-	content, ok := result["content"].([]any)
-	if !ok || len(content) == 0 {
-		t.Fatalf("Expected content array")
+	contents, ok := result["contents"].([]any)
+	if !ok || len(contents) == 0 {
+		t.Fatalf("Expected contents array")
 	}
 
-	textContent := content[0].(map[string]any)
-	text := textContent["text"].(string)
+	resourceContent := contents[0].(map[string]any)
+	text := resourceContent["text"].(string)
 
 	// Verify content contains expected text
 	if !strings.Contains(text, "# Bar") {
 		t.Error("Expected file content to contain bar header")
-	}
-}
-
-func TestMarkdownFileReadByName(t *testing.T) {
-	client := NewMCPTestClient(t)
-	defer client.Close()
-
-	// Initialize
-	_, err := client.SendRequest(createInitializeRequest(1))
-	if err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
-	}
-
-	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
-		"filename": "bar.md",
-	}))
-	if err != nil {
-		t.Fatalf("Failed to read markdown file by name: %v", err)
-	}
-
-	result, ok := response["result"].(map[string]any)
-	if !ok {
-		t.Fatalf("Expected result object")
-	}
-
-	content, ok := result["content"].([]any)
-	if !ok || len(content) == 0 {
-		t.Fatalf("Expected content array")
-	}
-
-	textContent := content[0].(map[string]any)
-	text := textContent["text"].(string)
-
-	// Verify content contains expected text
-	if !strings.Contains(text, "# Bar") {
-		t.Error("Expected file content to contain bar header")
-	}
-
-	// Test reading a file by name without extension
-	response, err = client.SendRequest(createToolCallRequest(3, "read_markdown_file", map[string]any{
-		"filename": "foo",
-	}))
-	if err != nil {
-		t.Fatalf("Failed to read foo by name: %v", err)
-	}
-
-	result, ok = response["result"].(map[string]any)
-	if !ok {
-		t.Fatalf("Expected result object")
-	}
-
-	content, ok = result["content"].([]any)
-	if !ok || len(content) == 0 {
-		t.Fatalf("Expected content array")
-	}
-
-	textContent = content[0].(map[string]any)
-	text = textContent["text"].(string)
-
-	if !strings.Contains(text, "# Foo") {
-		t.Error("Expected file content to contain Foo header")
 	}
 }
 
@@ -470,7 +363,6 @@ func TestToolsList(t *testing.T) {
 	// Verify expected tools
 	expectedTools := map[string]bool{
 		"find_markdown_files": false,
-		"read_markdown_file":  false,
 	}
 
 	for _, tool := range tools {
@@ -498,31 +390,21 @@ func TestErrorHandling(t *testing.T) {
 		t.Fatalf("Failed to initialize: %v", err)
 	}
 
-	// Test reading non-existent file using the tool
-	response, err := client.SendRequest(createToolCallRequest(2, "read_markdown_file", map[string]any{
-		"filename": "nonexistent.md",
-	}))
+	// Test reading non-existent file using the resource
+	response, err := client.SendRequest(createResourceReadRequest(2, "file://nonexistent.md"))
 	if err != nil {
 		t.Fatalf("Failed to send request: %v", err)
 	}
 
-	// Should get a result with error content
-	result, ok := response["result"].(map[string]any)
-	if !ok {
-		t.Fatalf("Expected result object")
-	}
-
-	content, ok := result["content"].([]any)
-	if !ok || len(content) == 0 {
-		t.Fatalf("Expected content array")
-	}
-
-	textContent := content[0].(map[string]any)
-	text := textContent["text"].(string)
-
-	// Should contain error message about file not found
-	if !strings.Contains(strings.ToLower(text), "file not found") && !strings.Contains(strings.ToLower(text), "failed to read file") {
-		t.Errorf("Expected error message about file not found or failed to read file, got: %s", text)
+	// Should get an error in the JSON-RPC response
+	if errorObj, hasError := response["error"]; hasError {
+		errorMap := errorObj.(map[string]any)
+		message := errorMap["message"].(string)
+		if !strings.Contains(strings.ToLower(message), "file not found") {
+			t.Errorf("Expected error message about file not found, got: %s", message)
+		}
+	} else {
+		t.Fatal("Expected error response for non-existent file but got success")
 	}
 }
 

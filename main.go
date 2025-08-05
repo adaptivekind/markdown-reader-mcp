@@ -24,12 +24,13 @@ type Config struct {
 }
 
 var (
-	config    Config
-	logger    *slog.Logger
-	helpFlag  = flag.Bool("help", false, "Show usage information")
-	debugFlag = flag.Bool("debug", false, "Enable debug logging (overrides config)")
-	quietFlag = flag.Bool("quiet", false, "Disable debug logging (overrides config)")
-	sseFlag   = flag.Bool("sse", false, "Enable SSE mode (overrides config)")
+	config     Config
+	logger     *slog.Logger
+	helpFlag   = flag.Bool("help", false, "Show usage information")
+	debugFlag  = flag.Bool("debug", false, "Enable debug logging (overrides config)")
+	quietFlag  = flag.Bool("quiet", false, "Disable debug logging (overrides config)")
+	sseFlag    = flag.Bool("sse", false, "Enable SSE mode (overrides config)")
+	stdoutFlag = flag.Bool("stdout", false, "Output logs to stdout (overrides log_file config)")
 )
 
 func showUsage() {
@@ -49,6 +50,7 @@ OPTIONS:
   -debug   Enable debug logging (overrides config file setting)
   -quiet   Disable debug logging (overrides config file setting)
   -sse     Enable SSE mode (overrides config file setting)
+  -stdout  Output logs to stdout (overrides log_file config setting)
 
 CONFIGURATION:
   The server can be configured in two ways:
@@ -82,9 +84,9 @@ INTEGRATION:
   This server is designed to work with MCP clients like Claude Code:
     claude mcp add markdown-reader -- %s
 
-TOOLS PROVIDED:
-  find_markdown_files  - Find markdown files with optional filtering and pagination
-  read_markdown_file   - Read content of specific markdown file by filename
+CAPABILITIES PROVIDED:
+  find_markdown_files  - Tool: Find markdown files with optional filtering and pagination
+  file://{filename}    - Resource: Read content of specific markdown file by filename
 
 EXAMPLES:
   %s ~/documents/notes                    # Scan single directory
@@ -93,9 +95,10 @@ EXAMPLES:
   %s -debug ~/docs                        # Enable debug logging via command line
   %s -quiet                               # Disable debug logging via command line
   %s -sse ~/docs                          # Enable SSE mode via command line
+  %s -stdout ~/docs                       # Output logs to stdout via command line
 
 For more information, see the README.md file.
-`, os.Args[0], os.Args[0], os.Args[0], DefaultMaxPageSize, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+`, os.Args[0], os.Args[0], os.Args[0], DefaultMaxPageSize, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 }
 
 func expandTilde(path string) (string, error) {
@@ -240,16 +243,10 @@ func main() {
 		handleFindMarkdownFiles,
 	)
 
-	// Add tool for reading individual markdown files
-	s.AddTool(
-		mcp.NewTool("read_markdown_file",
-			mcp.WithDescription("Read the contents of a specific markdown file by name"),
-			mcp.WithString("filename",
-				mcp.Required(),
-				mcp.Description("Name of the markdown file (e.g., 'README' or 'README.md')"),
-			),
-		),
-		handleReadMarkdownFile,
+	// Add resource for reading individual markdown files
+	s.AddResourceTemplate(
+		mcp.NewResourceTemplate("file://{filename}", "Markdown Resource"),
+		handleReadMarkdownFileResource,
 	)
 
 	// Determine SSE mode setting with command line flag taking precedence
