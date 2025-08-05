@@ -208,32 +208,19 @@ func TestServerInitialization(t *testing.T) {
 }
 
 func TestE2EFindMarkdownFiles(t *testing.T) {
-	// Setup test client
 	client := NewMCPTestClient(t)
 	defer client.Close()
 
-	// Initialize the MCP server
-	if _, err := client.SendRequest(createInitializeRequest(1)); err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
-	}
+	initializeMCPServer(t, client)
+	toolResponse := findAllMarkdownFilesToolCall(t, client)
+	filesList := parseToolResponseToFilesList(t, toolResponse)
+	filenames := convertFilesToFilenames(t, filesList)
 
-	// Call the find_markdown_files tool
-	toolResponse, err := client.SendRequest(createToolCallRequest(2, "find_markdown_files", map[string]any{}))
-	if err != nil {
-		t.Fatalf("Failed to call find_markdown_files tool: %v", err)
-	}
-
-	// Extract and parse the response content
-	filesList := extractFileListFromResponse(t, toolResponse)
-	filenames := extractFilenamesFromFiles(t, filesList)
-
-	// Verify expected results
-	verifyMinimumFileCount(t, filesList, 5)
-	verifyRequiredFilesPresent(t, filenames, []string{"foo.md", "bar.md", "baz.md"})
+	assertMinimumFileCount(t, filesList, 5)
+	assertRequiredFilesArePresent(t, filenames, []string{"foo.md", "bar.md", "baz.md"})
 }
 
-// extractFileListFromResponse parses the tool response and returns the files array
-func extractFileListFromResponse(t *testing.T, response map[string]any) []any {
+func parseToolResponseToFilesList(t *testing.T, response map[string]any) []any {
 	result, ok := response["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected result object in response")
@@ -260,8 +247,7 @@ func extractFileListFromResponse(t *testing.T, response map[string]any) []any {
 	return files
 }
 
-// extractFilenamesFromFiles converts file objects to a list of filenames
-func extractFilenamesFromFiles(t *testing.T, files []any) []string {
+func convertFilesToFilenames(t *testing.T, files []any) []string {
 	var filenames []string
 	for _, file := range files {
 		fileObj, ok := file.(map[string]any)
@@ -279,15 +265,27 @@ func extractFilenamesFromFiles(t *testing.T, files []any) []string {
 	return filenames
 }
 
-// verifyMinimumFileCount checks that at least the expected number of files were found
-func verifyMinimumFileCount(t *testing.T, files []any, minCount int) {
+func assertMinimumFileCount(t *testing.T, files []any, minCount int) {
 	if len(files) < minCount {
 		t.Errorf("Expected at least %d markdown files, got %d", minCount, len(files))
 	}
 }
 
-// verifyRequiredFilesPresent checks that all required files are in the results
-func verifyRequiredFilesPresent(t *testing.T, actualFilenames []string, requiredFiles []string) {
+func initializeMCPServer(t *testing.T, client *MCPTestClient) {
+	if _, err := client.SendRequest(createInitializeRequest(1)); err != nil {
+		t.Fatalf("Failed to initialize: %v", err)
+	}
+}
+
+func findAllMarkdownFilesToolCall(t *testing.T, client *MCPTestClient) map[string]any {
+	response, err := client.SendRequest(createToolCallRequest(2, "find_markdown_files", map[string]any{}))
+	if err != nil {
+		t.Fatalf("Failed to call find_markdown_files tool: %v", err)
+	}
+	return response
+}
+
+func assertRequiredFilesArePresent(t *testing.T, actualFilenames []string, requiredFiles []string) {
 	for _, requiredFile := range requiredFiles {
 		if !slices.Contains(actualFilenames, requiredFile) {
 			t.Errorf("Expected to find %s in results", requiredFile)
