@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -57,13 +58,9 @@ func NewMCPTestClient(t *testing.T) *MCPTestClient {
 		reader: bufio.NewReader(stdout),
 	}
 
-	// Give the server a moment to start
-	time.Sleep(100 * time.Millisecond)
-
 	return client
 }
 
-// Close closes the test client
 func (c *MCPTestClient) Close() error {
 	c.stdin.Close()
 	c.stdout.Close()
@@ -76,20 +73,16 @@ func (c *MCPTestClient) Close() error {
 	return c.cmd.Wait()
 }
 
-// SendRequest sends a JSON-RPC request and returns the response
 func (c *MCPTestClient) SendRequest(request any) (map[string]any, error) {
-	// Serialize request
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Send request
 	if _, err := c.stdin.Write(append(requestBytes, '\n')); err != nil {
 		return nil, fmt.Errorf("failed to write request: %w", err)
 	}
 
-	// Read response with timeout
 	responseChan := make(chan string, 1)
 	errorChan := make(chan error, 1)
 
@@ -104,7 +97,6 @@ func (c *MCPTestClient) SendRequest(request any) (map[string]any, error) {
 
 	select {
 	case response := <-responseChan:
-		// Parse JSON response
 		var result map[string]any
 		if err := json.Unmarshal([]byte(response), &result); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
@@ -134,15 +126,6 @@ func createInitializeRequest(id int) map[string]any {
 				"version": "1.0.0",
 			},
 		},
-	}
-}
-
-func createResourceListRequest(id int) map[string]any {
-	return map[string]any{
-		"jsonrpc": "2.0",
-		"id":      id,
-		"method":  "resources/list",
-		"params":  map[string]any{},
 	}
 }
 
@@ -179,19 +162,15 @@ func createToolCallRequest(id int, name string, arguments map[string]any) map[st
 	}
 }
 
-// Test functions
-
 func TestServerInitialization(t *testing.T) {
 	client := NewMCPTestClient(t)
 	defer client.Close()
 
-	// Test initialization
 	response, err := client.SendRequest(createInitializeRequest(1))
 	if err != nil {
 		t.Fatalf("Failed to initialize server: %v", err)
 	}
 
-	// Verify response structure
 	if response["jsonrpc"] != "2.0" {
 		t.Errorf("Expected jsonrpc 2.0, got %v", response["jsonrpc"])
 	}
@@ -205,7 +184,6 @@ func TestServerInitialization(t *testing.T) {
 		t.Fatalf("Expected result object, got %T", response["result"])
 	}
 
-	// Check server info
 	serverInfo, ok := result["serverInfo"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected serverInfo object")
@@ -215,7 +193,6 @@ func TestServerInitialization(t *testing.T) {
 		t.Errorf("Expected server name 'Markdown Reader', got %v", serverInfo["name"])
 	}
 
-	// Check capabilities
 	capabilities, ok := result["capabilities"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected capabilities object")
@@ -230,17 +207,15 @@ func TestServerInitialization(t *testing.T) {
 	}
 }
 
-func TestMarkdownFilesList(t *testing.T) {
+func TestFindMarkdowFiles(t *testing.T) {
 	client := NewMCPTestClient(t)
 	defer client.Close()
 
-	// Initialize
 	_, err := client.SendRequest(createInitializeRequest(1))
 	if err != nil {
 		t.Fatalf("Failed to initialize: %v", err)
 	}
 
-	// Call find_markdown_files tool
 	response, err := client.SendRequest(createToolCallRequest(2, "find_markdown_files", map[string]any{}))
 	if err != nil {
 		t.Fatalf("Failed to call find_markdown_files tool: %v", err)
@@ -259,35 +234,28 @@ func TestMarkdownFilesList(t *testing.T) {
 	textContent := content[0].(map[string]any)
 	text := textContent["text"].(string)
 
-	// Parse the JSON response
 	var listData map[string]any
 	if err := json.Unmarshal([]byte(text), &listData); err != nil {
 		t.Fatalf("Failed to parse markdown list JSON: %v", err)
 	}
 
-	// Verify structure
 	files, ok := listData["files"].([]any)
 	if !ok {
-		t.Fatalf("Expected files array")
+		t.Fatalf("Expected files array %v", files)
+	}
+	filenames := []any{}
+	for _, element := range files {
+		filenames = append(filenames, element.(map[string]any)["name"])
 	}
 
-	// Should have at least the test files we created
 	if len(files) < 5 {
 		t.Errorf("Expected at least 5 markdown files, got %d", len(files))
 	}
 
-	foundTestFile := false
-	for _, file := range files {
-		fileData := file.(map[string]any)
-		name := fileData["name"].(string)
-		if name == "foo.md" || name == "bar.md" || name == "baz.md" {
-			foundTestFile = true
-			break
+	for _, element := range []any{"foo.md", "bar.md", "baz.md"} {
+		if !slices.Contains(filenames, element) {
+			t.Errorf("Expected to find %s", element)
 		}
-	}
-
-	if !foundTestFile {
-		t.Error("Expected to find test files (foo.md, bar.md, or baz.md)")
 	}
 }
 

@@ -32,7 +32,7 @@ jobs:
         run: make build
 
       - name: Run tests
-        run: make test-verbose
+        run: make test
 
       - name: Run go vet
         run: make vet
