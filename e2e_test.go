@@ -20,11 +20,12 @@ const (
 
 // MCPTestClient represents a test client for the MCP server
 type MCPTestClient struct {
-	cmd    *exec.Cmd
-	stdin  io.WriteCloser
-	stdout io.ReadCloser
-	stderr io.ReadCloser
-	reader *bufio.Reader
+	cmd          *exec.Cmd
+	stdin        io.WriteCloser
+	stdout       io.ReadCloser
+	stderr       io.ReadCloser
+	reader       *bufio.Reader
+	lastResponse map[string]any
 }
 
 func NewMCPTestClient(t *testing.T) *MCPTestClient {
@@ -163,13 +164,10 @@ func createToolCallRequest(id int, name string, arguments map[string]any) map[st
 }
 
 func TestServerInitialization(t *testing.T) {
-	client := NewMCPTestClient(t)
+	client := setupMCPClientAndInitialize(t)
 	defer client.Close()
 
-	response, err := client.SendRequest(createInitializeRequest(1))
-	if err != nil {
-		t.Fatalf("Failed to initialize server: %v", err)
-	}
+	response := client.lastResponse
 
 	if response["jsonrpc"] != "2.0" {
 		t.Errorf("Expected jsonrpc 2.0, got %v", response["jsonrpc"])
@@ -208,10 +206,8 @@ func TestServerInitialization(t *testing.T) {
 }
 
 func TestE2EFindMarkdownFiles(t *testing.T) {
-	client := NewMCPTestClient(t)
+	client := setupMCPClientAndInitialize(t)
 	defer client.Close()
-
-	initializeMCPServer(t, client)
 	toolResponse := findAllMarkdownFilesToolCall(t, client)
 	filesList := parseToolResponseToFilesList(t, toolResponse)
 	filenames := convertFilesToFilenames(t, filesList)
@@ -221,23 +217,9 @@ func TestE2EFindMarkdownFiles(t *testing.T) {
 }
 
 func parseToolResponseToFilesList(t *testing.T, response map[string]any) []any {
-	result, ok := response["result"].(map[string]any)
-	if !ok {
-		t.Fatalf("Expected result object in response")
-	}
-
-	content, ok := result["content"].([]any)
-	if !ok || len(content) == 0 {
-		t.Fatalf("Expected non-empty content array")
-	}
-
-	textContent := content[0].(map[string]any)
-	jsonText := textContent["text"].(string)
-
-	var responseData map[string]any
-	if err := json.Unmarshal([]byte(jsonText), &responseData); err != nil {
-		t.Fatalf("Failed to parse JSON response: %v", err)
-	}
+	result := extractResultFromResponse(t, response)
+	jsonText := extractTextContentFromResult(t, result)
+	responseData := parseJSONResponse(t, jsonText)
 
 	files, ok := responseData["files"].([]any)
 	if !ok {
@@ -271,18 +253,48 @@ func assertMinimumFileCount(t *testing.T, files []any, minCount int) {
 	}
 }
 
-func initializeMCPServer(t *testing.T, client *MCPTestClient) {
-	if _, err := client.SendRequest(createInitializeRequest(1)); err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
-	}
-}
-
 func findAllMarkdownFilesToolCall(t *testing.T, client *MCPTestClient) map[string]any {
 	response, err := client.SendRequest(createToolCallRequest(2, "find_markdown_files", map[string]any{}))
 	if err != nil {
 		t.Fatalf("Failed to call find_markdown_files tool: %v", err)
 	}
 	return response
+}
+
+func setupMCPClientAndInitialize(t *testing.T) *MCPTestClient {
+	client := NewMCPTestClient(t)
+	response, err := client.SendRequest(createInitializeRequest(1))
+	if err != nil {
+		t.Fatalf("Failed to initialize: %v", err)
+	}
+	client.lastResponse = response
+	return client
+}
+
+func extractResultFromResponse(t *testing.T, response map[string]any) map[string]any {
+	result, ok := response["result"].(map[string]any)
+	if !ok {
+		t.Fatalf("Expected result object, got %T", response["result"])
+	}
+	return result
+}
+
+func extractTextContentFromResult(t *testing.T, result map[string]any) string {
+	content, ok := result["content"].([]any)
+	if !ok || len(content) == 0 {
+		t.Fatalf("Expected non-empty content array")
+	}
+
+	textContent := content[0].(map[string]any)
+	return textContent["text"].(string)
+}
+
+func parseJSONResponse(t *testing.T, jsonText string) map[string]any {
+	var responseData map[string]any
+	if err := json.Unmarshal([]byte(jsonText), &responseData); err != nil {
+		t.Fatalf("Failed to parse JSON response: %v", err)
+	}
+	return responseData
 }
 
 func assertRequiredFilesArePresent(t *testing.T, actualFilenames []string, requiredFiles []string) {
@@ -294,25 +306,15 @@ func assertRequiredFilesArePresent(t *testing.T, actualFilenames []string, requi
 }
 
 func TestMarkdownFileRead(t *testing.T) {
-	client := NewMCPTestClient(t)
+	client := setupMCPClientAndInitialize(t)
 	defer client.Close()
 
-	// Initialize
-	_, err := client.SendRequest(createInitializeRequest(1))
-	if err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
-	}
-
-	// Test reading a specific markdown file using the resource
 	response, err := client.SendRequest(createResourceReadRequest(2, "file://bar.md"))
 	if err != nil {
 		t.Fatalf("Failed to read markdown file: %v", err)
 	}
 
-	result, ok := response["result"].(map[string]any)
-	if !ok {
-		t.Fatalf("Expected result object")
-	}
+	result := extractResultFromResponse(t, response)
 
 	contents, ok := result["contents"].([]any)
 	if !ok || len(contents) == 0 {
@@ -322,39 +324,27 @@ func TestMarkdownFileRead(t *testing.T) {
 	resourceContent := contents[0].(map[string]any)
 	text := resourceContent["text"].(string)
 
-	// Verify content contains expected text
 	if !strings.Contains(text, "# Bar") {
 		t.Error("Expected file content to contain bar header")
 	}
 }
 
 func TestToolsList(t *testing.T) {
-	client := NewMCPTestClient(t)
+	client := setupMCPClientAndInitialize(t)
 	defer client.Close()
 
-	// Initialize
-	_, err := client.SendRequest(createInitializeRequest(1))
-	if err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
-	}
-
-	// List tools
 	response, err := client.SendRequest(createToolListRequest(2))
 	if err != nil {
 		t.Fatalf("Failed to list tools: %v", err)
 	}
 
-	result, ok := response["result"].(map[string]any)
-	if !ok {
-		t.Fatalf("Expected result object")
-	}
+	result := extractResultFromResponse(t, response)
 
 	tools, ok := result["tools"].([]any)
 	if !ok {
 		t.Fatalf("Expected tools array")
 	}
 
-	// Verify expected tools
 	expectedTools := map[string]bool{
 		"find_markdown_files": false,
 	}
@@ -375,22 +365,13 @@ func TestToolsList(t *testing.T) {
 }
 
 func TestErrorHandling(t *testing.T) {
-	client := NewMCPTestClient(t)
+	client := setupMCPClientAndInitialize(t)
 	defer client.Close()
 
-	// Initialize
-	_, err := client.SendRequest(createInitializeRequest(1))
-	if err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
-	}
-
-	// Test reading non-existent file using the resource
 	response, err := client.SendRequest(createResourceReadRequest(2, "file://nonexistent.md"))
 	if err != nil {
 		t.Fatalf("Failed to send request: %v", err)
 	}
-
-	// Should get an error in the JSON-RPC response
 	if errorObj, hasError := response["error"]; hasError {
 		errorMap := errorObj.(map[string]any)
 		message := errorMap["message"].(string)
