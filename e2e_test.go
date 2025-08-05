@@ -207,7 +207,7 @@ func TestServerInitialization(t *testing.T) {
 	}
 }
 
-func TestFindMarkdowFiles(t *testing.T) {
+func TestE2EFindMarkdownFiles(t *testing.T) {
 	client := NewMCPTestClient(t)
 	defer client.Close()
 
