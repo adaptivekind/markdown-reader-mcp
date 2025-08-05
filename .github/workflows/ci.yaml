@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: make install
 
+      - name: Build
+        run: make build
+
       - name: Run tests
         run: make test-verbose
 
@@ -41,31 +44,3 @@ jobs:
             gofmt -s -l .
             exit 1
           fi
-
-  build:
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: "1.24"
-
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install dependencies
-        run: make install
-
-      - name: Build
-        run: make build
