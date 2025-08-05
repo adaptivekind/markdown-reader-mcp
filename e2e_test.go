@@ -13,7 +13,6 @@ import (
 	"time"
 )
 
-// Test configuration
 const (
 	testTimeout = 10 * time.Second
 )
@@ -27,14 +26,7 @@ type MCPTestClient struct {
 	reader *bufio.Reader
 }
 
-// NewMCPTestClient creates a new test client
 func NewMCPTestClient(t *testing.T) *MCPTestClient {
-	// Build the server if needed
-	buildCmd := exec.Command("go", "build", "-o", "markdown-reader-mcp", ".")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build server: %v", err)
-	}
-
 	// Start the server with test directories
 	cmd := exec.Command("./markdown-reader-mcp", "./test/dir1", ".")
 

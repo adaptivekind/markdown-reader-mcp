@@ -18,7 +18,7 @@ repos:
     hooks:
       - id: go-test
         name: go test
-        entry: go test -v ./...
+        entry: make test
         language: system
         pass_filenames: false
         types: [go]

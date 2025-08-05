@@ -25,14 +25,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Download dependencies
-        run: go mod download
+      - name: Install dependencies
+        run: make install
 
       - name: Run tests
-        run: go test -v ./...
+        run: make test-verbose
 
       - name: Run go vet
-        run: go vet ./...
+        run: make vet
 
       - name: Check formatting
         run: |
@@ -64,14 +64,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Download dependencies
-        run: go mod download
+      - name: Install dependencies
+        run: make install
 
       - name: Build
-        run: go build -v
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: markdown-reader-mcp
-          path: markdown-reader-mcp
+        run: make build
