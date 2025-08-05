@@ -191,16 +191,9 @@ func TestDebugLoggingConfiguration(t *testing.T) {
 				DebugLogging: tt.debugLogging,
 			}
 
-			// Test find_markdown_files with debug logging setting
-			files, err := findMarkdownFiles("", 10)
+			_, err := findMarkdownFiles("", 10)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
-			}
-
-			// We can't easily test if logs were actually printed in unit tests,
-			// but we can verify the config is being respected and function works
-			if len(files) < 0 { // This will never be true, but ensures files is used
-				t.Error("Unexpected negative file count")
 			}
 		})
 	}
