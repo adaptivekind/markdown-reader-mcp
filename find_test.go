@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -117,13 +118,7 @@ func TestFindMarkdownFiles(t *testing.T) {
 			if tt.pageSize > 0 {
 				// For pagination, we just verify the count and that all found files are valid
 				for foundFile := range foundFiles {
-					isValidFile := false
-					for _, wantFile := range tt.wantFiles {
-						if foundFile == wantFile {
-							isValidFile = true
-							break
-						}
-					}
+					isValidFile := slices.Contains(tt.wantFiles, foundFile)
 					if !isValidFile {
 						t.Errorf("Found unexpected file %s", foundFile)
 					}
@@ -278,7 +273,6 @@ func TestHandleFindAllMarkdown(t *testing.T) {
 
 			text := textContent.Text
 
-			// Parse JSON response
 			var listData map[string]any
 			if err := json.Unmarshal([]byte(text), &listData); err != nil {
 				t.Fatalf("Failed to parse JSON response: %v", err)
