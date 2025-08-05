@@ -134,7 +134,10 @@ func configureLogger() {
 	// Determine log output destination
 	var logOutput *os.File
 
-	if config.LogFile != "" {
+	if *stdoutFlag {
+		// Command line --stdout flag overrides config file setting
+		logOutput = os.Stdout
+	} else if config.LogFile != "" {
 		// Expand tilde in log file path
 		logPath, err := expandTilde(config.LogFile)
 		if err != nil {
