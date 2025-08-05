@@ -15,7 +15,7 @@ repos:
       - id: go-mod-tidy
 
   - repo: https://github.com/adaptivekind/pre-commit-hooks
-    rev: main
+    rev: v0.0.3
     hooks:
       - id: check-untracked-files
 
